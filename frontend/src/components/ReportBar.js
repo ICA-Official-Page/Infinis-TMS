@@ -31,35 +31,82 @@ const ReportBar = ({ reportData, fetchData, setSearchTerm }) => {
 
     // Convert data to CSV string (flatten nested objects as JSON strings)
     const convertToCSV = (data) => {
-    if (!data.length) return "";
+        if (!data.length) return "";
 
-    // Collect all unique keys from all objects to ensure no missing headers
-    const allKeys = Array.from(
-        new Set(data.flatMap(obj => Object.keys(obj)))
-    );
+        const allKeys = new Set();
 
-    const headers = allKeys.join(",");
+        // Exclude department and comments initially
+        data.forEach(obj => {
+            Object.keys(obj).forEach(k => {
+                if (k !== "department" && k !== "comments") allKeys.add(k);
+            });
+        });
 
-    const rows = data.map(row =>
-        allKeys.map(key => {
-            const val = row[key];
+        // Add custom department columns
+        allKeys.add("departments");
+        allKeys.add("description");
+        allKeys.add("users");
 
-            // Handle nested objects/arrays properly
-            if (key === "department" || key === "comments" || key === "file") {
-                return `"${JSON.stringify(val || "").replace(/"/g, '""')}"`;
-            }
+        // Add formatted comments column
+        allKeys.add("comments");
 
-            if (typeof val === "object" && val !== null) {
-                return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
-            }
+        const keysArray = Array.from(allKeys);
+        const headers = keysArray.join(",");
 
-            return `"${val !== undefined ? val : ""}"`;
-        }).join(",")
-    );
+        const formatDate = (isoStr) => {
+            const date = new Date(isoStr);
+            return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+        };
 
-    return [headers, ...rows].join("\n");
-};
+        const rows = data.map(row => {
+            return keysArray.map(key => {
+                if (["departments", "description", "users"].includes(key)) {
+                    let dept = null;
+                    try {
+                        if (typeof row.department === "string") {
+                            const parsed = JSON.parse(row.department);
+                            dept = Array.isArray(parsed) ? parsed[0] : parsed;
+                        } else if (Array.isArray(row.department)) {
+                            dept = row.department[0];
+                        } else if (typeof row.department === "object" && row.department !== null) {
+                            dept = row.department;
+                        }
+                    } catch (e) {
+                        dept = {};
+                    }
 
+                    if (key === "departments") return `"${dept?.name || ""}"`;
+                    if (key === "description") return `"${dept?.description || ""}"`;
+                    if (key === "users") return `"${(dept?.users || []).join(", ")}"`;
+                }
+
+                // 🎯 Format comments
+                if (key === "comments") {
+                    let commentList = [];
+                    try {
+                        const parsed = typeof row.comments === "string" ? JSON.parse(row.comments) : row.comments;
+                        commentList = Array.isArray(parsed) ? parsed : [];
+                    } catch (e) { }
+
+                    const formattedComments = commentList.map(c => {
+                        return `(${c.commenter || ""}: ${c.content || ""} @ ${formatDate(c.createdAt)})`;
+                    });
+
+                    return `"${formattedComments.join("; ")}"`;
+                }
+
+                const val = row[key];
+
+                if (typeof val === "object" && val !== null) {
+                    return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+                }
+
+                return `"${val !== undefined ? val : ""}"`;
+            }).join(",");
+        });
+
+        return [headers, ...rows].join("\n");
+    };
 
     // Download helper function
     const downloadFile = (content, fileName, type) => {
@@ -83,82 +130,82 @@ const ReportBar = ({ reportData, fetchData, setSearchTerm }) => {
         downloadFile(json, "report.json", "application/json");
     };
 
-const exportPDF = async () => {
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF();
+    const exportPDF = async () => {
+        const { jsPDF } = await import("jspdf");
+        const doc = new jsPDF();
 
-    const title = "Report";
-    doc.text(title, 10, 10);
+        const title = "Report";
+        doc.text(title, 10, 10);
 
-    // Collect all unique headers across all rows
-    const allHeaders = Array.from(new Set(reportData.flatMap(row => Object.keys(row))));
-    let y = 20;
+        // Collect all unique headers across all rows
+        const allHeaders = Array.from(new Set(reportData.flatMap(row => Object.keys(row))));
+        let y = 20;
 
-    reportData.forEach((row) => {
-        const lines = allHeaders.map((h) => {
-            const val = row[h];
+        reportData.forEach((row) => {
+            const lines = allHeaders.map((h) => {
+                const val = row[h];
 
-            if (h === "department") {
-                // Format department array of objects nicely with line breaks
-                if (Array.isArray(val)) {
-                    return val
-                        .map((obj, i) => {
-                            const objText = Object.entries(obj)
-                                .map(([k, v]) => {
-                                    if (Array.isArray(v)) {
-                                        return `${k}: [${v.join(", ")}]`;
-                                    } else {
-                                        return `${k}: ${v}`;
-                                    }
-                                })
-                                .join("\n");
-                            return objText + (i < val.length - 1 ? "\n---" : "");
-                        })
-                        .join("\n");
+                if (h === "department") {
+                    // Format department array of objects nicely with line breaks
+                    if (Array.isArray(val)) {
+                        return val
+                            .map((obj, i) => {
+                                const objText = Object.entries(obj)
+                                    .map(([k, v]) => {
+                                        if (Array.isArray(v)) {
+                                            return `${k}: [${v.join(", ")}]`;
+                                        } else {
+                                            return `${k}: ${v}`;
+                                        }
+                                    })
+                                    .join("\n");
+                                return objText + (i < val.length - 1 ? "\n---" : "");
+                            })
+                            .join("\n");
+                    }
+                    return "";
                 }
-                return "";
-            } 
-            else if (h === "comments") {
-                if (Array.isArray(val)) {
-                    return val
-                        .map(comment => {
-                            const createdAtFormatted = comment.createdAt
-                                ? new Date(comment.createdAt).toLocaleString()
-                                : "";
-                            return `Content: ${comment.content || ""}\nCommenter: ${comment.commenter || ""}\nCreated At: ${createdAtFormatted}`;
-                        })
-                        .join("\n---\n");
+                else if (h === "comments") {
+                    if (Array.isArray(val)) {
+                        return val
+                            .map(comment => {
+                                const createdAtFormatted = comment.createdAt
+                                    ? new Date(comment.createdAt).toLocaleString()
+                                    : "";
+                                return `Content: ${comment.content || ""}\nCommenter: ${comment.commenter || ""}\nCreated At: ${createdAtFormatted}`;
+                            })
+                            .join("\n---\n");
+                    }
+                    return "";
                 }
-                return "";
-            }
-            else if (h === "file") {
-                // file is a string, just print it
-                return val || "";
-            }
-            else if (typeof val === "object" && val !== null) {
-                return JSON.stringify(val);
-            } 
-            else {
-                return val || "";
+                else if (h === "file") {
+                    // file is a string, just print it
+                    return val || "";
+                }
+                else if (typeof val === "object" && val !== null) {
+                    return JSON.stringify(val);
+                }
+                else {
+                    return val || "";
+                }
+            });
+
+            const text = allHeaders
+                .map((h, i) => `${h}: ${lines[i]}`)
+                .join("\n\n");
+
+            const splitText = doc.splitTextToSize(text, 180);
+            doc.text(splitText, 10, y);
+            y += splitText.length * 7 + 10;
+
+            if (y > 280) {
+                doc.addPage();
+                y = 10;
             }
         });
 
-        const text = allHeaders
-            .map((h, i) => `${h}: ${lines[i]}`)
-            .join("\n\n");
-
-        const splitText = doc.splitTextToSize(text, 180);
-        doc.text(splitText, 10, y);
-        y += splitText.length * 7 + 10;
-
-        if (y > 280) {
-            doc.addPage();
-            y = 10;
-        }
-    });
-
-    doc.save("report.pdf");
-};
+        doc.save("report.pdf");
+    };
 
 
 

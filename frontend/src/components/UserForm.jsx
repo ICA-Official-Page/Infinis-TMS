@@ -4,6 +4,8 @@ import axios from 'axios';
 import URI from '../utills';
 import toast from 'react-hot-toast';
 import SessionEndWarning from './SessionEndWarning';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons';
 
 function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, passReq, deleteUpdateRequest }) {
 
@@ -413,6 +415,19 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
     }
   }
 
+  
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePassword = () => {
+    setShowPassword((prev) => !prev);
+  };
+
+  const [showcPassword, setShowcPassword] = useState(false);
+
+  const togglecPassword = () => {
+    setShowcPassword((prev) => !prev);
+  };
+
   return (
     <>
       {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
@@ -475,29 +490,39 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
 
         <div className="form-group">
           <label htmlFor="password" className="form-label">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            className={`form-control ${errors?.name ? 'border-error' : ''}`}
-            value={formData?.password}
-            onChange={handleChange}
-            placeholder="Enter Password"
-          />
+          <div style={styles.container}  >
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              className={`form-control ${errors?.name ? 'border-error' : ''}`}
+              value={formData?.password}
+              onChange={handleChange}
+              placeholder="Enter Password"
+            />
+            <span onClick={togglePassword} style={styles.icon}>
+              {formData?.password ? showPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} /> : ''}
+            </span>
+          </div>
           {errors.name && <div className="text-error text-sm mt-1">{errors.name}</div>}
         </div>
 
         <div className="form-group">
           <label htmlFor="cpassword" className="form-label">Confirm Password</label>
-          <input
-            type="password"
-            id="cpassword"
-            name="cpassword"
-            className={`form-control ${errors.password ? 'border-error' : ''}`}
-            value={formData?.cpassword}
-            onChange={handleChange}
-            placeholder="Confirm Password"
-          />
+          <div style={styles.container}  >
+            <input
+              type={showcPassword ? "text" : "password"}
+              id="cpassword"
+              name="cpassword"
+              className={`form-control ${errors.password ? 'border-error' : ''}`}
+              value={formData?.cpassword}
+              onChange={handleChange}
+              placeholder="Confirm Password"
+            />
+            <span onClick={togglecPassword} style={styles.icon}>
+              {formData?.cpassword ? showcPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} /> : ''}
+            </span>
+          </div>
           {errors.email && <div className="text-error text-sm mt-1">{errors.email}</div>}
         </div>
 
@@ -646,9 +671,36 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
               </button>
           }
         </div>
-      </form>
+      </form >
     </>
   );
 }
+
+
+// Basic inline styling
+const styles = {
+  container: {
+    position: 'relative',
+    width: '100%',
+    // maxWidth: '300px',
+  },
+  input: {
+    width: '100%',
+    padding: '10px 40px 10px 10px',
+    border: 'none'
+    // fontSize: '16px',
+  },
+  icon: {
+    position: 'absolute',
+    right: '10px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    cursor: 'pointer',
+    color: '#b2b0b0',
+    // fontSize: '18px',
+  },
+
+};
+
 
 export default UserForm;
