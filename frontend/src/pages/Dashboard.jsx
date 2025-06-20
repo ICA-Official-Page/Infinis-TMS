@@ -432,7 +432,7 @@ function Dashboard() {
     <div className="dashboard">
       {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
 
-      {/* Sidebar */}
+      {/* Sidebar for all panels */}
       <aside className={`sidebar ${sidebarExpanded ? 'expanded' : ''}`}>
         <div className="sidebar-header">
           <button className="sidebar-toggle" onClick={toggleSidebar}>
