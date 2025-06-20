@@ -113,7 +113,7 @@ const OpenTicketCategorization = ({ openTickets }) => {
   return (
     <div className="card">
       <h3 className="card-header">Open Ticket Categorization</h3>
-      <div className="card-body" style={{ height: '300px' }}>
+      <div className="card-body">
         <Pie data={data} options={options} />
       </div>
     </div>

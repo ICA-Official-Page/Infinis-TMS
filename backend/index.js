@@ -17,9 +17,9 @@ const app = express();
 
 app.use(cors(
     {
-    origin: process.env.URI,
-    credentials: true
-}
+        origin: process.env.URI,
+        credentials: true
+    }
 ));
 
 app.use(express.json());
@@ -28,7 +28,7 @@ app.use(cookieParser());
 
 dbConnect();
 
-app.use('/superadmin', superAdminApp); 
+app.use('/superadmin', superAdminApp);
 
 app.use('/auth', authApp);
 
@@ -57,4 +57,4 @@ app.get('*', (req, res) => {
 //     res.sendFile(path.resolve(__dirname,"frontend","build","index.html"));
 // });
 
-app.listen(process.env.PORT, () => console.log(`Server successfully runs on port ${process.env.PORT}`))
+app.listen(process.env.PORT,'0.0.0.0', () => console.log(`Server successfully runs on port ${process.env.PORT}`))

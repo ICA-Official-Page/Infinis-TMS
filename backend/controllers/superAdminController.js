@@ -10,6 +10,7 @@ import Tickets from '../models/ticketModel.js';
 import UserEditRequests from '../models/userReqModel.js';
 import Department from '../models/departmentModel.js';
 import TicketSettings from '../models/ticketSetingsModel.js';
+import nodemailer from 'nodemailer';
 
 export const makeAdmin = async (req, res) => {
     try {
@@ -65,6 +66,24 @@ export const makeAdmin = async (req, res) => {
 
         const user = await Admin({ username, email, name, password: hashedPassword, mobile, branches, address, profile: imageUrl, designation });
         const us = await user.save();
+        //set nodemailer transport
+        const transtporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.USER_EMAIL,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+        //body of mail
+        const mailBody = {
+            from: process.env.USER_EMAIL,
+            to: req?.body?.email,
+            subject: 'Account Credentials for Infinis Ticketing System.',
+            html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    <strong>Password:</strong><span>${req?.body?.password}</span>
+                    `,
+        };
+        let info = await transtporter.sendMail(mailBody);
         if (branches && branches.length > 0) {
             const inputBranches = branches; // array from your request
 
@@ -415,5 +434,26 @@ export const deleteAdmin = async (req, res) => {
         }
     } catch (error) {
         console.log("while deleting user", error);
+    }
+}
+
+export const deleteTicket = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const ticket = await Tickets.findByIdAndDelete(id);
+        if (ticket) {
+            return res.status(200).json({
+                success: true,
+                message: 'Ticket deleted Succesfully!'
+            })
+        }
+        else {
+            return res.status(400).json({
+                success: false,
+                message: 'Does not delete right now!'
+            })
+        }
+    } catch (error) {
+        console.log('while deleting the ticket', error);
     }
 }

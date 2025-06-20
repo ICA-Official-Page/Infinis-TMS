@@ -1,5 +1,5 @@
 import express from 'express'
-import { createBranch, deleteAdmin, deleteBranch, getAllAdmins, getBranches, getRequests, makeAdmin, updateBranch, updatePassword } from '../controllers/superAdminController.js';
+import { createBranch, deleteAdmin, deleteBranch, deleteTicket, getAllAdmins, getBranches, getRequests, makeAdmin, updateBranch, updatePassword } from '../controllers/superAdminController.js';
 import { upload, uploadToGridFs } from '../middlewares/uploadToGFS.js';
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
 
@@ -14,5 +14,6 @@ app.get('/branches', getBranches);
 app.post('/updatebranch', isAuthenticated, updateBranch);
 app.delete('/deletebranch/:id', isAuthenticated, deleteBranch);
 app.delete('/deleteadmin/:id', isAuthenticated, deleteAdmin);
+app.delete('/deleteticket/:id', isAuthenticated, deleteTicket);
 
 export default app;

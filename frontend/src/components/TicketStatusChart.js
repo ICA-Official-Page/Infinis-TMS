@@ -76,9 +76,9 @@ const TicketStatusChart = ({ ticket }) => {
         <div className='card'>
             <h3 className='card-header'>Ticket Status Overview</h3>
             <div className="card-body">
-                <div className="table-responsivee">
+                {/* <div className="table-responsivee"> */}
                     <Doughnut data={data} options={options} />
-                </div>
+                {/* </div> */}
             </div>
         </div>
     );

@@ -10,6 +10,7 @@ import User from "../models/userModel.js";
 import bcrypt from 'bcryptjs'
 import UserEditRequests from "../models/userReqModel.js";
 import SuperAdmin from "../models/superAdminModel.js";
+import nodemailer from 'nodemailer';
 
 export const addUser = async (req, res) => {
     try {
@@ -80,6 +81,24 @@ export const addUser = async (req, res) => {
             }
         }
         const us = await user.save();
+        //set nodemailer transport
+        const transtporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.USER_EMAIL,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+        //body of mail
+        const mailBody = {
+            from: process.env.USER_EMAIL,
+            to: req?.body?.email,
+            subject: 'Account Credentials for Infinis Ticketing System.',
+            html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    <strong>Password:</strong><span>${req?.body?.password}</span>
+                    `,
+        };
+        let info = await transtporter.sendMail(mailBody);
         return res.status(200).json({
             success: true,
             message: 'User created Successfully🤗',
@@ -342,7 +361,7 @@ export const updateUser = async (req, res) => {
                 const mobile = await SuperAdmin.findByIdAndUpdate(userId, { mobile: req.body.mobile });
                 userUpdated = true;
             }
-           
+
 
             if (req.body?.address && user?.address !== req?.body?.address) {
                 const address = await SuperAdmin.findByIdAndUpdate(userId, { address: req.body.address });

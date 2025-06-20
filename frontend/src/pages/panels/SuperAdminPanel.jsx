@@ -355,7 +355,6 @@ function SuperAdminPanel({ user, view = 'overview' }) {
     return matchesSearch && matchesStatus;
   });
 
-
   //not worked
   const handleDeleteAdmin = () => {
     const updatedAdmins = admins.filter(admin => admin.id !== itemToDelete.id);
@@ -401,7 +400,6 @@ function SuperAdminPanel({ user, view = 'overview' }) {
       });
     }
   };
-
 
   //action APIs
   //add comment on ticket
@@ -496,6 +494,33 @@ function SuperAdminPanel({ user, view = 'overview' }) {
       console.log("while delete user", error);
     }
   };
+
+  const deleteTicket = async (id) => {
+    try {
+      const res = await axios.delete(`${URI}/superadmin/deleteticket/${id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      }).then(res => {
+        fetchAllTickets();
+        toast.success(res?.data?.message);
+      }).catch(err => {
+        // Handle error and show toast
+        if (err.response && err.response.data) {
+          if (err.response.data.notAuthorized) {
+            setSessionWarning(true);
+          } else {
+            toast.error(err.response.data.message || "Something went wrong");
+          }
+        } else {
+          toast.error("Something went wrong");
+        }
+      });
+    } catch (error) {
+      console.log('while delete ticket', error);
+    }
+  }
 
   //components for render
   // Render different content based on the view
@@ -733,7 +758,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
                             <td>{branch.location}</td>
                             <td>
                               {branchAdmin ? (
-                                <div className="flex items-center gap-2" style={{paddingLeft:'10%'}}>
+                                <div className="flex items-center gap-2" style={{ paddingLeft: '10%' }}>
                                   <img className="user-avatar" src={branchAdmin?.profile ? branchAdmin?.profile : '/img/admin.png'} alt="PF" />
                                   <span>{branchAdmin.name}</span>
                                 </div>
@@ -857,7 +882,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
                                 {/* <td>{adminBranch ? adminBranch.name : 'Not assigned'}</td> */}
                                 <td>{formatDate(admin.createdAt)}</td>
                                 <td>
-                                  <div className="flex gap-2" style={{justifyContent:'center'}}>
+                                  <div className="flex gap-2" style={{ justifyContent: 'center' }}>
                                     <button
                                       className="btn btn-sm btn-outline"
                                       onClick={() => handleEditAdmin(admin._id)}
@@ -1015,26 +1040,26 @@ function SuperAdminPanel({ user, view = 'overview' }) {
                         </span>
                       </td>
                       <td>
-                          <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
-                            ticket.priority === 'medium' ? 'badge-warning' :
-                              'badge-primary'
-                            }`}
-                            style={{
-                              background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
-                              color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-                            }}
-                          >
-                            {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
-                            ticket?.status === 'in-progress' ? 'badge-primary' :
-                              'badge-success'
-                            }`} style={{ background: ticket?.tat && tatBG(ticket?.tat, ticket?.createdAt) }}>
-                            {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
-                          </span>
-                        </td>
+                        <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
+                          ticket.priority === 'medium' ? 'badge-warning' :
+                            'badge-primary'
+                          }`}
+                          style={{
+                            background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
+                            color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                          }}
+                        >
+                          {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
+                          ticket?.status === 'in-progress' ? 'badge-primary' :
+                            'badge-success'
+                          }`} style={{ background: ticket?.tat && tatBG(ticket?.tat, ticket?.createdAt) }}>
+                          {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
+                        </span>
+                      </td>
                       <td style={{ textAlign: 'center' }}>
                         <div className="flex gap-2" style={{ justifyContent: 'center' }}>
                           {ticket?.status === 'open' && (
@@ -1044,6 +1069,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
                             <button className="btn btn-sm btn-success" onClick={() => handleUpdateTicketStatus(ticket?._id, 'resolved')}>Resolve</button>
                           )}
                           <button className="btn btn-sm btn-outline" onClick={() => handleViewTicket(ticket)}>View</button>
+                          <button className="btn btn-sm btn-error" onClick={() => deleteTicket(ticket?._id)}>Delete</button>
                         </div>
                       </td>
                     </tr>

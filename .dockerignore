@@ -1,0 +1,8 @@
+node_modules
+Dockerfile
+.dockerignore
+# .env
+frontend/node_modules
+# frontend/public
+# frontend/src
+# ⚠️ frontend/build ko ignore mat karna!
