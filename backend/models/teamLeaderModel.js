@@ -12,7 +12,8 @@ const teamLeaderSchema = new mongoose.Schema({
     department: String,
     address: String,
     profile: String,
-    designation: String
+    designation: String,
+    postdesignation: String
 }, { timestamps: true });
 
 const TeamLeader = new mongoose.model('teamleader', teamLeaderSchema);

@@ -17,7 +17,7 @@ export const addUser = async (req, res) => {
 
         // const { username, email, password, mobile, branch, address, department, designation } = req.body;
 
-        if (!req.body.username || !req.body.email || !req.body.name || !req.body.password || !req.body.mobile || !req.body.address) {
+        if (!req.body.username || !req.body.email || !req.body.name || !req.body.password || !req.body.mobile || !req.body.address || !req.body.postdesignation) {
             return res.status(400).json({
                 success: false,
                 message: 'Something is missing,Please cheack!'
@@ -32,20 +32,38 @@ export const addUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
         let existEmail, existMobile, existUsername;
-        if (req.body.designation === 'Executive') {
-            existUsername = await User.findOne({ username: req.body.usesrname });
-            existEmail = await User.findOne({ email: req.body.email });
-            existMobile = await User.findOne({ mobile: req.body.mobile });
+        if (!existEmail || !existMobile || !existUsername) {
+            if (!existUsername) {
+                existUsername = await User.findOne({ username: req.body.username });
+            }
+            if (!existEmail) {
+                existEmail = await User.findOne({ email: req.body.email });
+            }
+            if (!existMobile) {
+                existMobile = await User.findOne({ mobile: req.body.mobile });
+            }
         }
-        if (req.body.designation === 'Manager') {
-            existUsername = await Manager.findOne({ username: req.body.usesrname });
-            existEmail = await Manager.findOne({ email: req.body.email });
-            existMobile = await Manager.findOne({ mobile: req.body.mobile });
+        if (!existEmail || !existMobile || !existUsername) {
+            if (!existUsername) {
+                existUsername = await Manager.findOne({ username: req.body.username });
+            }
+            if (!existEmail) {
+                existEmail = await Manager.findOne({ email: req.body.email });
+            }
+            if (!existMobile) {
+                existMobile = await Manager.findOne({ mobile: req.body.mobile });
+            }
         }
-        if (req.body.designation === 'Team Leader') {
-            existUsername = await TeamLeader.findOne({ username: req.body.usesrname });
-            existEmail = await TeamLeader.findOne({ email: req.body.email });
-            existMobile = await TeamLeader.findOne({ mobile: req.body.mobile });
+        if (!existEmail || !existMobile || !existUsername) {
+            if (!existUsername) {
+                existUsername = await TeamLeader.findOne({ username: req.body.username });
+            }
+            if (!existEmail) {
+                existEmail = await TeamLeader.findOne({ email: req.body.email });
+            }
+            if (!existMobile) {
+                existMobile = await TeamLeader.findOne({ mobile: req.body.mobile });
+            }
         }
 
         if (existUsername) {
@@ -132,6 +150,23 @@ export const updateUser = async (req, res) => {
             if (req.body?.password && user?.password !== req?.body?.password) {
                 const hashedPassword = await bcrypt.hash(req?.body?.password, 10);
                 const password = await User.findByIdAndUpdate(userId, { password: hashedPassword });
+                const transtporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.USER_EMAIL,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+                //body of mail
+                const mailBody = {
+                    from: process.env.USER_EMAIL,
+                    to: req?.body?.email,
+                    subject: 'New Account Credentials for Infinis Ticketing System.',
+                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    <strong>Password:</strong><span>${req?.body?.password}</span>
+                    `,
+                };
+                let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
             }
             if (req.body?.mobile && String(user?.mobile) !== String(req?.body?.mobile)) {
@@ -154,6 +189,10 @@ export const updateUser = async (req, res) => {
             }
             if (req.body?.designation && user?.designation !== req?.body?.designation) {
                 const designation = await User.findByIdAndUpdate(userId, { designation: req.body.designation });
+                userUpdated = true;
+            }
+            if (req.body?.postdesignation && user?.postdesignation !== req?.body?.postdesignation) {
+                const postdesignation = await User.findByIdAndUpdate(userId, { postdesignation: req.body.postdesignation });
                 userUpdated = true;
             }
             if (req?.file) {
@@ -180,6 +219,23 @@ export const updateUser = async (req, res) => {
             if (req.body?.password && user?.password !== req?.body?.password) {
                 const hashedPassword = await bcrypt.hash(req?.body?.password, 10);
                 const password = await Manager.findByIdAndUpdate(userId, { password: hashedPassword });
+                const transtporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.USER_EMAIL,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+                //body of mail
+                const mailBody = {
+                    from: process.env.USER_EMAIL,
+                    to: req?.body?.email,
+                    subject: 'New Account Credentials for Infinis Ticketing System.',
+                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    <strong>Password:</strong><span>${req?.body?.password}</span>
+                    `,
+                };
+                let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
             }
             if (req.body?.mobile && String(user?.mobile) !== String(req?.body?.mobile)) {
@@ -197,6 +253,10 @@ export const updateUser = async (req, res) => {
             }
             if (req.body?.designation && user?.designation !== req?.body?.designation) {
                 const designation = await Manager.findByIdAndUpdate(userId, { designation: req.body.designation });
+                userUpdated = true;
+            }
+            if (req.body?.postdesignation && user?.postdesignation !== req?.body?.postdesignation) {
+                const postdesignation = await Manager.findByIdAndUpdate(userId, { postdesignation: req.body.postdesignation });
                 userUpdated = true;
             }
             if (req?.file) {
@@ -224,6 +284,23 @@ export const updateUser = async (req, res) => {
             if (req.body?.password && user?.password !== req?.body?.password) {
                 const hashedPassword = await bcrypt.hash(req?.body?.password, 10);
                 const password = await TeamLeader.findByIdAndUpdate(userId, { password: hashedPassword });
+                const transtporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.USER_EMAIL,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+                //body of mail
+                const mailBody = {
+                    from: process.env.USER_EMAIL,
+                    to: req?.body?.email,
+                    subject: 'New Account Credentials for Infinis Ticketing System.',
+                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    <strong>Password:</strong><span>${req?.body?.password}</span>
+                    `,
+                };
+                let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
             }
             if (req.body?.mobile && String(user?.mobile) !== String(req?.body?.mobile)) {
@@ -246,6 +323,10 @@ export const updateUser = async (req, res) => {
             }
             if (req.body?.designation && user?.designation !== req?.body?.designation) {
                 const designation = await TeamLeader.findByIdAndUpdate(userId, { designation: req.body.designation });
+                userUpdated = true;
+            }
+            if (req.body?.postdesignation && user?.postdesignation !== req?.body?.postdesignation) {
+                const postdesignation = await TeamLeader.findByIdAndUpdate(userId, { postdesignation: req.body.postdesignation });
                 userUpdated = true;
             }
             if (req?.file) {
@@ -273,6 +354,23 @@ export const updateUser = async (req, res) => {
             if (req.body?.password && user?.password !== req?.body?.password) {
                 const hashedPassword = await bcrypt.hash(req?.body?.password, 10);
                 const password = await Admin.findByIdAndUpdate(userId, { password: hashedPassword });
+                const transtporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.USER_EMAIL,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+                //body of mail
+                const mailBody = {
+                    from: process.env.USER_EMAIL,
+                    to: req?.body?.email,
+                    subject: 'New Account Credentials for Infinis Ticketing System.',
+                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    <strong>Password:</strong><span>${req?.body?.password}</span>
+                    `,
+                };
+                let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
             }
             if (req.body?.mobile && String(user?.mobile) !== String(req?.body?.mobile)) {
@@ -330,6 +428,10 @@ export const updateUser = async (req, res) => {
             }
             if (req.body?.designation && user?.designation !== req?.body?.designation) {
                 const designation = await Admin.findByIdAndUpdate(userId, { designation: req.body.designation });
+                userUpdated = true;
+            }
+            if (req.body?.postdesignation && user?.postdesignation !== req?.body?.postdesignation) {
+                const postdesignation = await Admin.findByIdAndUpdate(userId, { postdesignation: req.body.postdesignation });
                 userUpdated = true;
             }
             if (req?.file) {
@@ -426,33 +528,56 @@ export const deleteUserEditRequest = async (req, res) => {
         console.log("while delete update request", error);
     }
 }
-
 export const deleteUser = async (req, res) => {
-    // console.log('here');
     try {
         const id = req.params.id;
         let request;
+
+        // Try deleting from User
         request = await User.findByIdAndDelete(id);
+
+        // If not found in User, try TeamLeader
         if (!request) {
             request = await TeamLeader.findByIdAndDelete(id);
-            await Department.updateOne({ teamleader: request.username }, { teamleader: '' })
+            if (request) {
+                await Department.updateOne(
+                    { teamleader: request.username },
+                    { teamleader: '' }
+                );
+            }
         }
+
+        // If not found in TeamLeader, try Manager
         if (!request) {
             request = await Manager.findByIdAndDelete(id);
         }
+
+        // If not found in Manager, try Admin
         if (!request) {
             request = await Admin.findByIdAndDelete(id);
         }
+
         if (request) {
             return res.status(200).json({
                 success: true,
                 message: 'User Deleted!'
             });
+        } else {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found!'
+            });
         }
+
     } catch (error) {
         console.log("while deleting user", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        });
     }
 }
+
 
 export const createDepartment = async (req, res) => {
     try {

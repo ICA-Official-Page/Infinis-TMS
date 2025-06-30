@@ -7,7 +7,7 @@ import UserForm from '../../components/UserForm';
 import axios from 'axios';
 import URI from '../../utills';
 import toast from 'react-hot-toast';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { } from '@fortawesome/free-brands-svg-icons'
 import { faBell, faBuilding, faChartBar, faComment, faCommentAlt, faCommentDots, faEdit, faEye, faMoon, faUser } from '@fortawesome/free-regular-svg-icons'
 import { faBars, faChartLine, faGear, faLock, faSignOut, faTicketAlt, faTimes, faTrash, faUserCog, faUsers, faUsersCog } from '@fortawesome/free-solid-svg-icons'
@@ -19,6 +19,7 @@ import TicketStatusChart from '../../components/TicketStatusChart';
 import OpenTicketCategorization from '../../components/OpenTicketCategorization';
 import ReportBar from '../../components/ReportBar';
 import TicketCard from '../../components/TicketCard';
+import { setSessionWarning } from '../../Redux/userSlice';
 
 function TeamLeaderPanel({ view = 'executives' }) {
 
@@ -40,12 +41,14 @@ function TeamLeaderPanel({ view = 'executives' }) {
   const [comment, setComment] = useState('');
   const [showTicketForm, setShowTicketForm] = useState(false);
 
+  const { sessionWarning } = useSelector(store => store.user);
+  const dispatch = useDispatch();
+
   const [allRequests, setAllRequests] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [userRequest, setUserRequest] = useState();
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [loading, setLoading] = useState();
-  const [sessionWarning, setSessionWarning] = useState(false);
   const [reAssignDiv, setReAssignDiv] = useState(false);
   const [showPriorityUpdate, setShowPriorityUpdate] = useState(false);
   const [newPriority, setNewPriority] = useState('');
@@ -254,7 +257,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -394,7 +397,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -427,7 +430,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -500,7 +503,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -543,7 +546,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true))
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -585,6 +588,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
         addCommentOnTicket(data, '');
         const res = await axios.post(`${URI}/executive/ticketreassign`, { ticketId: selectedTicket?._id, presentDept: selectedTicket?.department, reAssignto: reAssignto }, { withCredentials: true })
           .then(res => {
+            handleUpdateTicketStatus(selectedTicket?._id, 'open');
             fetchAllTickets();
             handleCloseModal();
             toast.success(res?.data?.message);
@@ -639,7 +643,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -657,6 +661,32 @@ function TeamLeaderPanel({ view = 'executives' }) {
       });
     }
   }
+
+  useEffect(() => {
+    if (view === 'overview') {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'executives') {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'tickets') {
+      // setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'password-requests') {
+      setShowTicketForm(false);
+    }
+    else if (view === 'user-requests') {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+    else {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+  }, [view])
 
   // Render different content based on the view
   const renderContent = () => {
@@ -1017,257 +1047,324 @@ function TeamLeaderPanel({ view = 'executives' }) {
           </div>
         </div>
       ) : (
+        <>
+          <div className="card">
+            <div className="card-body p-0">
+              {filteredTickets.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Ticket Id</th>
+                        <th>Name</th>
+                        <th>IssuedBy</th>
 
-        <div className="card">
-          <div className="card-body p-0">
-            {filteredTickets.length > 0 ? (
-              <div className="table-responsive">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>IssuedBy</th>
+                        <th>Subject</th>
 
-                      <th>Subject</th>
-
-                      <th>Status</th>
-                      <th>Priority</th>
-                      <th>T.A.T.</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTickets?.map((ticket, index) => {
-                      return (
-                        // tickets?.filter(ticket => ticket?.department?.find(d => d.name === dept.name) &&
-                        ticket?.status !== 'resolved'
-                        && ticket?.tat
-                        && tatBG(ticket?.tat, ticket?.createdAt) === 'red' &&
-                        // ticket?.status === 'in-progress' &&
-                        <tr key={index + 1}>
-                          {/* <td>#{index + 1}</td> */}
-                          <td>{ticket?.name}</td>
-                          <td>{ticket?.issuedby}</td>
-                          <td>{ticket?.subject}</td>
-                          <td>
-                            <span className={`badge ${ticket.status === 'open' ? 'badge-warning' :
-                              ticket.status === 'in-progress' ? 'badge-primary' :
-                                'badge-success'
-                              }`}>
-                              {ticket.status === 'in-progress' ? 'In Progress' :
-                                ticket.status?.charAt(0).toUpperCase() + ticket.status?.slice(1)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
-                              ticket.priority === 'medium' ? 'badge-warning' :
-                                'badge-primary'
-                              }`}
-                              style={{
-                                background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
-                                color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-                              }}
-                            >
-                              {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
-                              ticket?.status === 'in-progress' ? 'badge-primary' :
-                                'badge-success'
-                              }`} style={{ background: ticket?.tat && tatBG(ticket?.tat, ticket?.createdAt) }}>
-                              {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="flex gap-2" style={{ justifyContent: 'center' }}>
-                              {
-                                loading?.id === ticket?._id && loading?.status ? <button className={`btn btn-${ticket?.status === 'open' ? 'primary' : 'success'}`}>
-                                  <img src="/img/loader.png" className='Loader' alt="loader" />
-                                </button>
-                                  :
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>T.A.T.</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTickets?.map((ticket, index) => {
+                        return (
+                          // tickets?.filter(ticket => ticket?.department?.find(d => d.name === dept.name) &&
+                          ticket?.status !== 'resolved'
+                          && ticket?.tat
+                          && tatBG(ticket?.tat, ticket?.createdAt) === 'red' &&
+                          // ticket?.status === 'in-progress' &&
+                          <tr key={index + 1}>
+                            {/* <td>#{index + 1}</td> */}
+                            <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
+                            <td>{ticket?.name}</td>
+                            <td>{ticket?.issuedby}</td>
+                            <td>{ticket?.subject}</td>
+                            <td>
+                              <span className={`badge ${ticket.status === 'open' ? 'badge-warning' :
+                                ticket.status === 'in-progress' ? 'badge-primary' :
+                                  'badge-success'
+                                }`}>
+                                {ticket.status === 'in-progress' ? 'In Progress' :
+                                  ticket.status?.charAt(0).toUpperCase() + ticket.status?.slice(1)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
+                                ticket.priority === 'medium' ? 'badge-warning' :
+                                  'badge-primary'
+                                }`}
+                                style={{
+                                  background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
+                                  color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                                }}
+                              >
+                                {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
+                                ticket?.status === 'in-progress' ? 'badge-primary' :
+                                  'badge-success'
+                                }`} style={{ background: ticket?.tat && tatBG(ticket?.tat, ticket?.createdAt) }}>
+                                {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="flex gap-2" style={{ justifyContent: 'center' }}>
+                                {
+                                  loading?.id === ticket?._id && loading?.status ? <button className={`btn btn-${ticket?.status === 'open' ? 'primary' : 'success'}`}>
+                                    <img src="/img/loader.png" className='Loader' alt="loader" />
+                                  </button>
+                                    :
+                                    <>
+                                      {ticket?.status !== 'resolved' && (
+                                        <>
+                                          {ticket?.status === 'open' && (
+                                            <button
+                                              className="btn btn-sm btn-primary"
+                                              onClick={() => handleUpdateTicketStatus(ticket?._id, 'in-progress')}
+                                            >
+                                              Start
+                                            </button>
+                                          )}
+                                          {ticket?.status === 'in-progress' && (
+                                            <button
+                                              className="btn btn-sm btn-success"
+                                              onClick={() => handleUpdateTicketStatus(ticket?._id, 'resolved')}
+                                            >
+                                              Resolve
+                                            </button>
+                                          )}
+                                        </>
+                                      )}
+                                    </>
+                                }
+                                <button className="btn btn-sm btn-outline" onClick={() => handleViewTicket(ticket)} >View</button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredTickets?.map((ticket, index) => {
+                        return (
+                          // ticket?.status === 'open' &&
+                          ticket?.status !== 'resolved'
+                          && ticket?.tat
+                          && tatBG(ticket?.tat, ticket?.createdAt) !== 'red' &&
+                          <tr key={index + 1}>
+                            <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
+                            <td>{ticket?.name}</td>
+                            <td>{ticket?.issuedby}</td>
+                            <td>{ticket?.subject}</td>
+                            <td>
+                              <span className={`badge ${ticket.status === 'open' ? 'badge-warning' :
+                                ticket.status === 'in-progress' ? 'badge-primary' :
+                                  'badge-success'
+                                }`}>
+                                {ticket.status === 'in-progress' ? 'In Progress' :
+                                  ticket.status?.charAt(0).toUpperCase() + ticket.status?.slice(1)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
+                                ticket.priority === 'medium' ? 'badge-warning' :
+                                  'badge-primary'
+                                }`}
+                                style={{
+                                  background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
+                                  color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                                }}
+                              >
+                                {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
+                                ticket?.status === 'in-progress' ? 'badge-primary' :
+                                  'badge-success'
+                                }`} style={{ background: ticket?.tat && tatBG(ticket?.tat, ticket?.createdAt) }}>
+                                {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="flex gap-2" style={{ justifyContent: 'center' }}>
+                                {
+                                  loading?.id === ticket?._id && loading?.status ? <button className={`btn btn-${ticket?.status === 'open' ? 'primary' : 'success'}`}>
+                                    <img src="/img/loader.png" className='Loader' alt="loader" />
+                                  </button>
+                                    :
+                                    <>
+                                      {ticket?.status !== 'resolved' && (
+                                        <>
+                                          {ticket?.status === 'open' && (
+                                            <button
+                                              className="btn btn-sm btn-primary"
+                                              onClick={() => handleUpdateTicketStatus(ticket?._id, 'in-progress')}
+                                            >
+                                              Start
+                                            </button>
+                                          )}
+                                          {ticket?.status === 'in-progress' && (
+                                            <button
+                                              className="btn btn-sm btn-success"
+                                              onClick={() => handleUpdateTicketStatus(ticket?._id, 'resolved')}
+                                            >
+                                              Resolve
+                                            </button>
+                                          )}
+                                        </>
+                                      )}
+                                    </>
+                                }
+                                <button className="btn btn-sm btn-outline" onClick={() => handleViewTicket(ticket)} >View</button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredTickets?.map((ticket, index) => {
+                        return (
+                          ticket?.status === 'resolved' &&
+                          <tr key={index + 1}>
+                            <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
+                            <td>{ticket?.name}</td>
+                            <td>{ticket?.issuedby}</td>
+                            <td>{ticket?.subject}</td>
+                            <td>
+                              <span className={`badge ${ticket.status === 'open' ? 'badge-warning' :
+                                ticket.status === 'in-progress' ? 'badge-primary' :
+                                  'badge-success'
+                                }`}>
+                                {ticket.status === 'in-progress' ? 'In Progress' :
+                                  ticket.status?.charAt(0).toUpperCase() + ticket.status?.slice(1)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
+                                ticket.priority === 'medium' ? 'badge-warning' :
+                                  'badge-primary'
+                                }`}
+                                style={{
+                                  background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
+                                  color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                                }}
+                              >
+                                {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
+                                ticket?.status === 'in-progress' ? 'badge-primary' :
+                                  'badge-success'
+                                }`} >
+                                {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="flex gap-2" style={{ justifyContent: 'center' }}>
+                                {ticket.status !== 'resolved' && (
                                   <>
-                                    {ticket?.status !== 'resolved' && (
-                                      <>
-                                        {ticket?.status === 'open' && (
-                                          <button
-                                            className="btn btn-sm btn-primary"
-                                            onClick={() => handleUpdateTicketStatus(ticket?._id, 'in-progress')}
-                                          >
-                                            Start
-                                          </button>
-                                        )}
-                                        {ticket?.status === 'in-progress' && (
-                                          <button
-                                            className="btn btn-sm btn-success"
-                                            onClick={() => handleUpdateTicketStatus(ticket?._id, 'resolved')}
-                                          >
-                                            Resolve
-                                          </button>
-                                        )}
-                                      </>
+                                    {ticket.status === 'open' && (
+                                      <button
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() => handleUpdateTicketStatus(ticket._id, 'in-progress')}
+                                      >
+                                        Start
+                                      </button>
+                                    )}
+                                    {ticket.status === 'in-progress' && (
+                                      <button
+                                        className="btn btn-sm btn-success"
+                                        onClick={() => handleUpdateTicketStatus(ticket._id, 'resolved')}
+                                      >
+                                        Resolve
+                                      </button>
                                     )}
                                   </>
-                              }
-                              <button className="btn btn-sm btn-outline" onClick={() => handleViewTicket(ticket)} >View</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredTickets?.map((ticket, index) => {
-                      return (
-                        // ticket?.status === 'open' &&
-                        ticket?.status !== 'resolved'
-                        && ticket?.tat
-                        && tatBG(ticket?.tat, ticket?.createdAt) !== 'red' &&
-                        <tr key={index + 1}>
+                                )}
+                                <button className="btn btn-sm btn-outline" onClick={() => handleViewTicket(ticket)}>View</button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-4 text-center">
+                  <p className="text-muted">No tickets found with the current filters.</p>
+                </div>
+              )}
 
+            </div>
+          </div> <br />
+          <div className="card">
+            <h2 className="text-xl font-bold">Raised By You</h2>
+            <div className="card-body p-0">
+              {filteredTickets?.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Ticket Id</th>
+                        <th>Name</th>
+                        <th>Subject</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTickets?.map((ticket, index) => (
+                        ticket?.issuedby === `${user?.username}${user?.department ? ` - ${user.department}` : ''} (${user?.designation})` &&
+                        <tr key={ticket?.id}>
+                          <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
                           <td>{ticket?.name}</td>
-                          <td>{ticket?.issuedby}</td>
-                          <td>{ticket?.subject}</td>
+                          {/* <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
+                            ticket?.status === 'in-progress' ? 'badge-primary' :
+                              'badge-success'
+                            }`}>
+                            {ticket?.status === 'in-progress' ? 'In Progress' :
+                              ticket?.status?.charAt(0).toUpperCase() + ticket?.status?.slice(1)}
+                          </span> */}
+
                           <td>
-                            <span className={`badge ${ticket.status === 'open' ? 'badge-warning' :
-                              ticket.status === 'in-progress' ? 'badge-primary' :
-                                'badge-success'
-                              }`}>
-                              {ticket.status === 'in-progress' ? 'In Progress' :
-                                ticket.status?.charAt(0).toUpperCase() + ticket.status?.slice(1)}
-                            </span>
+                            {ticket?.subject}
+                            {/* <span className={`badge ${ticket?.priority === 'high' ? 'badge-error' :
+                            ticket?.priority === 'medium' ? 'badge-warning' :
+                              'badge-primary'
+                            }`}>
+                            {ticket?.priority?.charAt(0).toUpperCase() + ticket?.priority?.slice(1)}
+                          </span> */}
                           </td>
-                          <td>
-                            <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
-                              ticket.priority === 'medium' ? 'badge-warning' :
-                                'badge-primary'
-                              }`}
-                              style={{
-                                background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
-                                color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-                              }}
-                            >
-                              {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
-                              ticket?.status === 'in-progress' ? 'badge-primary' :
-                                'badge-success'
-                              }`} style={{ background: ticket?.tat && tatBG(ticket?.tat, ticket?.createdAt) }}>
-                              {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
-                            </span>
-                          </td>
+                          {/* <td>{formatDate(ticket?.createdAt)}</td> */}
                           <td>
                             <div className="flex gap-2" style={{ justifyContent: 'center' }}>
-                              {
-                                loading?.id === ticket?._id && loading?.status ? <button className={`btn btn-${ticket?.status === 'open' ? 'primary' : 'success'}`}>
-                                  <img src="/img/loader.png" className='Loader' alt="loader" />
-                                </button>
-                                  :
-                                  <>
-                                    {ticket?.status !== 'resolved' && (
-                                      <>
-                                        {ticket?.status === 'open' && (
-                                          <button
-                                            className="btn btn-sm btn-primary"
-                                            onClick={() => handleUpdateTicketStatus(ticket?._id, 'in-progress')}
-                                          >
-                                            Start
-                                          </button>
-                                        )}
-                                        {ticket?.status === 'in-progress' && (
-                                          <button
-                                            className="btn btn-sm btn-success"
-                                            onClick={() => handleUpdateTicketStatus(ticket?._id, 'resolved')}
-                                          >
-                                            Resolve
-                                          </button>
-                                        )}
-                                      </>
-                                    )}
-                                  </>
-                              }
-                              <button className="btn btn-sm btn-outline" onClick={() => handleViewTicket(ticket)} >View</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredTickets?.map((ticket, index) => {
-                      return (
-                        ticket?.status === 'resolved' &&
-                        <tr key={index + 1}>
-                          <td>{ticket?.name}</td>
-                          <td>{ticket?.issuedby}</td>
-                          <td>{ticket?.subject}</td>
-                          <td>
-                            <span className={`badge ${ticket.status === 'open' ? 'badge-warning' :
-                              ticket.status === 'in-progress' ? 'badge-primary' :
-                                'badge-success'
-                              }`}>
-                              {ticket.status === 'in-progress' ? 'In Progress' :
-                                ticket.status?.charAt(0).toUpperCase() + ticket.status?.slice(1)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge ${ticket.priority === 'high' ? 'badge-error' :
-                              ticket.priority === 'medium' ? 'badge-warning' :
-                                'badge-primary'
-                              }`}
-                              style={{
-                                background: ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color,
-                                color: parseInt(ticketSettings?.priorities?.find(p => p?.name === ticket?.priority)?.color?.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-                              }}
-                            >
-                              {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
-                              ticket?.status === 'in-progress' ? 'badge-primary' :
-                                'badge-success'
-                              }`} >
-                              {ticket?.tat && formatTat(ticket?.tat, ticket?.createdAt)}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="flex gap-2" style={{ justifyContent: 'center' }}>
-                              {ticket.status !== 'resolved' && (
-                                <>
-                                  {ticket.status === 'open' && (
-                                    <button
-                                      className="btn btn-sm btn-primary"
-                                      onClick={() => handleUpdateTicketStatus(ticket._id, 'in-progress')}
-                                    >
-                                      Start
-                                    </button>
-                                  )}
-                                  {ticket.status === 'in-progress' && (
-                                    <button
-                                      className="btn btn-sm btn-success"
-                                      onClick={() => handleUpdateTicketStatus(ticket._id, 'resolved')}
-                                    >
-                                      Resolve
-                                    </button>
-                                  )}
-                                </>
+                              {ticket?.status === 'resolved' && (
+                                <button className="btn btn-sm btn-success" style={{ background: 'green' }} onClick={() => handleUpdateTicketStatus(ticket?._id, 'closed')}>Close</button>
                               )}
-                              <button className="btn btn-sm btn-outline" onClick={() => handleViewTicket(ticket)}>View</button>
+                              <button
+                                className="btn btn-sm btn-outline"
+                                onClick={() => handleViewTicket(ticket)}
+                              >
+                                View
+                              </button>
                             </div>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="p-4 text-center">
-                <p className="text-muted">No tickets found with the current filters.</p>
-              </div>
-            )}
-
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-4 text-center">
+                  <p className="text-muted">No tickets found. Create a new ticket to get started!</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )
       }
     </>
@@ -1349,7 +1446,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
 
                               <td>
                                 {/* {request?.status === 'pending' ? ( */}
-                                <div className="flex gap-2" style={{justifyContent:'center'}}>
+                                <div className="flex gap-2" style={{ justifyContent: 'center' }}>
                                   <button
                                     className="btn btn-sm btn-success"
                                     onClick={() => handleEditUser(request?._id)}
@@ -1424,7 +1521,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
                   </tr>
                 </thead>
                 <tbody>
-                  
+
                   {userRequest?.map((request, index) => {
                     return (
                       <>
@@ -1434,7 +1531,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
 
                             <td>
 
-                              <div className="flex items-center gap-2" style={{justifyContent:'center'}}>
+                              <div className="flex items-center gap-2" style={{ justifyContent: 'center' }}>
                                 <img src={request?.profile ? request?.profile : '/img/admin.png'} className='user-avatar' alt="/img/admin.png" />
                                 <span>{request?.username}</span>
                               </div>
@@ -1497,7 +1594,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
 
                             <td >
 
-                              <div className="flex items-center gap-2" style={{justifyContent:'center'}}>
+                              <div className="flex items-center gap-2" style={{ justifyContent: 'center' }}>
                                 <img src={request?.profile ? request?.profile : '/img/admin.png'} className='user-avatar' alt="/img/admin.png" />
                                 <span>{request?.username}</span>
                               </div>
@@ -1567,7 +1664,7 @@ function TeamLeaderPanel({ view = 'executives' }) {
 
   return (
     <div className="animate-fade">
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
       {renderContent()}
       {/* Ticket Detail Modal */}
       {isModalOpen && selectedTicket && (

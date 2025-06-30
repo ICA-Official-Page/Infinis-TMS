@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import URI from '../utills';
 import toast from 'react-hot-toast';
 import SessionEndWarning from './SessionEndWarning';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons';
+import CropperModal from './CropperModal';
+import { setSessionWarning } from '../Redux/userSlice';
 
 function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, passReq, deleteUpdateRequest }) {
 
-  const { user } = useSelector(store => store.user);
+  const { sessionWarning, user } = useSelector(store => store.user);
 
   const [formData, setFormData] = useState({
     username: initialData?.username || '',
@@ -21,11 +23,21 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
     department: initialData?.department || user?.department || '',
     branches: [],
     branch: initialData?.branch || user?.branch || '',
-    name: initialData?.name || ''
+    name: initialData?.name || '',
+    postdesignation: initialData?.postdesignation || ''
   });
-  const [sessionWarning, setSessionWarning] = useState(false);
-
   const [profile, setProfile] = useState(null);
+  const [croppedProfile, setCroppedProfile] = useState(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const dispatch = useDispatch();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfile(file);
+      setShowCropper(true);
+    }
+  };
   const [loading, setLoading] = useState(false);
 
   const [errors, setErrors] = useState({});
@@ -149,8 +161,12 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
   };
 
   const passValidation = () => {
-    if (!formData?.username || !formData?.email || !formData?.password || !formData?.cpassword || !formData?.mobile || !formData?.address) {
+    if (!formData?.username || !formData?.email || !formData?.password || !formData?.cpassword || !formData?.mobile || !formData?.address || !formData?.postdesignation) {
       toast.error('Please fill out all Fields!')
+      return false;
+    }
+    else if (formData?.mobile?.length !== 10) {
+      toast.error('mobile must be 10 numbers!')
       return false;
     }
     else if (!formData?.password?.length > 6) {
@@ -187,6 +203,10 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
   }
 
   const updationValidation = () => {
+    if (formData?.mobile && formData?.mobile?.length !== 10) {
+      toast.error('mobile must be 10 numbers!')
+      return false;
+    }
     if (formData?.password) {
       if (!formData?.password?.length > 6) {
         toast.error('Password must have at least 6 letters!')
@@ -236,8 +256,9 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
         formdata.append('password', formData?.password);
         formdata.append('mobile', formData?.mobile);
         formdata.append('address', formData?.address);
-        formdata.append('profile', profile);
+        formdata.append('profile', croppedProfile);
         formdata.append('designation', designation);
+        formdata.append('postdesignation', formData?.postdesignation);
 
         if (designation === 'Team Leader' || designation === 'Executive') {
           formdata.append('department', formData?.department);
@@ -263,15 +284,18 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
               cpassword: '',
               mobile: null,
               department: '',
-              address: ''
+              address: '',
+              postdesignation: '',
+
             });
             setProfile(null);
+            setCroppedProfile(null);
             toast.success(res?.data?.message);
           }).catch(err => {
             // Handle error and show toast
             if (err.response && err.response.data) {
               if (err.response.data.notAuthorized) {
-                setSessionWarning(true);
+                dispatch(setSessionWarning(true));
               } else {
                 toast.error(err.response.data.message || "Something went wrong");
               }
@@ -309,15 +333,18 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
               cpassword: '',
               mobile: null,
               branch: '',
-              address: ''
+              address: '',
+              postdesignation: '',
+
             });
             setProfile(null);
+            setCroppedProfile(null);
             toast.success(res?.data?.message);
           }).catch(err => {
             // Handle error and show toast
             if (err.response && err.response.data) {
               if (err.response.data.notAuthorized) {
-                setSessionWarning(true);
+                dispatch(setSessionWarning(true));
               } else {
                 toast.error(err.response.data.message || "Something went wrong");
               }
@@ -352,9 +379,9 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
         formdata.append('password', formData?.password);
         formdata.append('mobile', formData?.mobile);
         formdata.append('address', formData?.address);
-        formdata.append('profile', profile);
+        formdata.append('profile', croppedProfile);
         formdata.append('designation', designation);
-
+        formdata.append('postdesignation', formData?.postdesignation);
         formdata.append('branches', formData?.branches);
         formdata.append('department', formData?.department);
         formdata.append('branch', formData?.branch);
@@ -386,7 +413,10 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
             cpassword: '',
             mobile: null,
             department: '',
-            address: ''
+            address: '',
+            postdesignation: '',
+            profile: null,
+            croppedProfile: null
           });
           setProfile(null);
           toast.success(res?.data?.message);
@@ -398,7 +428,7 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true));
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -415,7 +445,7 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
     }
   }
 
-  
+
   const [showPassword, setShowPassword] = useState(false);
 
   const togglePassword = () => {
@@ -430,7 +460,7 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
 
   return (
     <>
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
       <form className='form'>
         <div className="form-group">
           <label htmlFor="username" className="form-label">Username</label>
@@ -476,15 +506,19 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
 
         <div className="form-group">
           <label htmlFor="mobile" className="form-label">Mobile Number</label>
-          <input
-            type="number"
-            id="mobile"
-            name="mobile"
-            className={`form-control ${errors?.mobile ? 'border-error' : ''}`}
-            value={formData?.mobile}
-            onChange={handleChange}
-            placeholder="Enter mobile number"
-          />
+          <div className="flex" style={{ width: '100%' }}>
+            <span className="px-3 py-2 bg-gray-200 border border-r-0 rounded-l">+91</span>
+            <input
+              type="number"
+              id="mobile"
+              name="mobile"
+              className={`form-control ${errors?.mobile ? 'border-error' : ''}`}
+              value={formData?.mobile}
+              onChange={handleChange}
+              placeholder="Enter mobile number"
+            />
+          </div>
+
           {errors?.name && <div className="text-error text-sm mt-1">{errors?.name}</div>}
         </div>
 
@@ -507,14 +541,16 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
           {errors.name && <div className="text-error text-sm mt-1">{errors.name}</div>}
         </div>
 
+
+
         <div className="form-group">
           <label htmlFor="cpassword" className="form-label">Confirm Password</label>
-          <div style={styles.container}  >
+          <div style={styles.container}>
             <input
               type={showcPassword ? "text" : "password"}
               id="cpassword"
               name="cpassword"
-              className={`form-control ${errors.password ? 'border-error' : ''}`}
+              className={`form-control ${formData.cpassword && formData.password !== formData.cpassword ? 'border-error' : ''}`}
               value={formData?.cpassword}
               onChange={handleChange}
               placeholder="Confirm Password"
@@ -523,7 +559,25 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
               {formData?.cpassword ? showcPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} /> : ''}
             </span>
           </div>
-          {errors.email && <div className="text-error text-sm mt-1">{errors.email}</div>}
+
+          {/* ✅ Show mismatch warning */}
+          {formData.cpassword && formData.password !== formData.cpassword && (
+            <div className="text-error text-sm mt-1">Passwords do not match</div>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="postdesignation" className="form-label">User Designation</label>
+          <input
+            type="text"
+            id="postdesignation"
+            name="postdesignation"
+            className={`form-control ${errors.postdesignation ? 'border-error' : ''}`}
+            value={formData?.postdesignation}
+            onChange={handleChange}
+            placeholder="User's Designation in Organization"
+          />
+          {errors?.postdesignation && <div className="text-error text-sm mt-1">{errors?.postdesignation}</div>}
         </div>
 
         {
@@ -583,7 +637,7 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
 
         <div className="form-group">
           <label htmlFor="" className="form-label">Profile Picture</label>
-          <label htmlFor="profile" className='form-label' style={{ backgroundColor: 'rgba(35, 225, 232, 0.9)', color: "white", padding: '2%', borderRadius: '12px' }}>{profile ? profile?.name : 'Upload a Profile Picture'}</label>
+          <label htmlFor="profile" className='form-label' style={{ backgroundColor: 'rgba(35, 225, 232, 0.9)', color: "white", padding: '2%', borderRadius: '12px' }}>{croppedProfile ? croppedProfile.name : profile ? profile.name : 'Upload a Profile Picture'}</label>
           <input
             type="file"
             id="profile"
@@ -591,9 +645,23 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
             style={{ display: 'none' }}
             className=''
             // value={profile}
-            onChange={(e) => setProfile(e.target.files[0])}
+            onChange={handleFileChange}
             placeholder="Enter full name"
           />
+          {/* {croppedProfile && (
+            <img src={URL.createObjectURL(croppedProfile)} alt="Cropped Preview" width="100" height="100" />
+          )} */}
+
+          {showCropper && (
+            <CropperModal
+              image={profile}
+              onCropDone={(croppedImage) => {
+                setCroppedProfile(croppedImage);
+                setShowCropper(false);
+              }}
+              onClose={() => setShowCropper(false)}
+            />
+          )}
           {errors.name && <div className="text-error text-sm mt-1">{errors.name}</div>}
         </div>
 
@@ -646,7 +714,7 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
               </div>
             }
           </>
-        }
+        } <br />
 
 
         <div className="flex gap-2 justify-end mt-4">

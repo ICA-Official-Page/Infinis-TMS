@@ -14,7 +14,7 @@ import nodemailer from 'nodemailer';
 
 export const makeAdmin = async (req, res) => {
     try {
-        let { username, email, name, password, mobile, branches, address, designation } = req.body;
+        let { username, email, name, password, mobile, branches, address, designation, postdesignation } = req.body;
 
         if (branches) {
             if (!Array.isArray(branches)) {
@@ -22,7 +22,7 @@ export const makeAdmin = async (req, res) => {
             }
         }
 
-        if (!username || !email || !name || !password || !mobile || !address) {
+        if (!username || !email || !name || !password || !mobile || !address || !postdesignation) {
             return res.status(401).json({
                 success: false,
                 message: 'Something is missing,Please cheack!'
@@ -64,7 +64,7 @@ export const makeAdmin = async (req, res) => {
             );
         }
 
-        const user = await Admin({ username, email, name, password: hashedPassword, mobile, branches, address, profile: imageUrl, designation });
+        const user = await Admin({ username, email, name, password: hashedPassword, mobile, branches, address, profile: imageUrl, designation, postdesignation });
         const us = await user.save();
         //set nodemailer transport
         const transtporter = nodemailer.createTransport({
@@ -164,7 +164,11 @@ export const updatePassword = async (req, res) => {
 
 export const createBranch = async (req, res) => {
     try {
-        const branch = await Branch(req.body);
+        let imageUrl;
+        if (req.file) {
+            imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+        }
+        const branch = await Branch({ ...req.body, profile: imageUrl });
         const saveBranch = await branch.save();
         if (req?.body?.admin) {
             const updateAdmin = await Admin.findOneAndUpdate(
@@ -244,6 +248,12 @@ export const updateBranch = async (req, res) => {
         // ✅ Update Location
         if (req.body?.location && branch?.location !== req.body.location) {
             await Branch.findByIdAndUpdate(branchId, { location: req.body.location });
+            branchUpdated = true;
+        }
+
+        if (req?.file) {
+            const imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+            const profile = await Branch.findByIdAndUpdate(branchId, { profile: imageUrl });
             branchUpdated = true;
         }
 

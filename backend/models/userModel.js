@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
     department: String,
     address: String,
     profile: String,
-    designation: String
+    designation: String,
+    postdesignation: String
 },{timestamps:true});
 
 const User = new mongoose.model('user', userSchema);

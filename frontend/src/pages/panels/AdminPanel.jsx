@@ -6,7 +6,7 @@ import mockDepartments from '../../data/mockDepartments';
 import mockBranches from '../../data/mockBranches';
 import UserForm from '../../components/UserForm';
 import DepartmentForm from '../../components/DepartmentForm';
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import axios from 'axios';
 import URI from '../../utills';
 import toast from 'react-hot-toast';
@@ -20,10 +20,12 @@ import TicketStatusChart from '../../components/TicketStatusChart';
 import OpenTicketCategorization from '../../components/OpenTicketCategorization';
 import ReportBar from '../../components/ReportBar';
 import TicketCard from '../../components/TicketCard';
+import { setSessionWarning } from '../../Redux/userSlice';
 
 function AdminPanel({ view = 'departments' }) {
 
-  const { user } = useSelector(store => store.user);
+  const { sessionWarning, user } = useSelector(store => store.user);
+  const dispatch = useDispatch();
 
   const [departments, setDepartments] = useState([]);
   const [teamLeaders, setTeamLeaders] = useState([]);
@@ -58,7 +60,6 @@ function AdminPanel({ view = 'departments' }) {
   const [loadingCS, setLoadingCS] = useState();
   const [loadingPS, setLoadingPS] = useState();
   const [loadingTIS, setLoadingTIS] = useState();
-  const [sessionWarning, setSessionWarning] = useState(false);
 
   const [stats, setStats] = useState({
     // totalBranches: 0,
@@ -233,7 +234,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -615,7 +616,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -642,7 +643,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -675,7 +676,7 @@ function AdminPanel({ view = 'departments' }) {
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true));
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -709,7 +710,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -740,7 +741,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -780,7 +781,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -798,6 +799,38 @@ function AdminPanel({ view = 'departments' }) {
       });
     }
   }
+
+  useEffect(() => {
+    if (view === 'overview') {
+      setShowDepartmentForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'departments') {
+      setShowUserForm(false);
+    }
+    else if (view === 'leadership') {
+      setShowDepartmentForm(false);
+    }
+    else if (view === 'tickets') {
+      setShowDepartmentForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'password-requests') {
+      setShowDepartmentForm(false);
+    }
+    else if (view === 'user-requests') {
+      setShowDepartmentForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'ticket-settings') {
+      setShowDepartmentForm(false);
+      setShowUserForm(false);
+    }
+    else {
+      setShowDepartmentForm(false);
+      setShowUserForm(false);
+    }
+  }, [view])
 
   // Render different content based on the view
   const renderContent = () => {
@@ -940,7 +973,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -977,7 +1010,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -1007,7 +1040,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -1052,7 +1085,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -1093,7 +1126,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -1124,7 +1157,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -1155,7 +1188,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -1191,7 +1224,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -1222,7 +1255,7 @@ function AdminPanel({ view = 'departments' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -2803,7 +2836,7 @@ function AdminPanel({ view = 'departments' }) {
 
   return (
     <div className="animate-fade">
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
 
       {renderContent()}
 

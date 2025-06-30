@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons';
 
-function Signup({ verifySuperAdmin }) {
+function Signup() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -103,7 +103,6 @@ function Signup({ verifySuperAdmin }) {
                         address: ''
                     });
                     setProfile(null);
-                    verifySuperAdmin();
                     toast.success(res?.data?.message);
                 }).catch(err => {
                     // Handle error and show toast
@@ -289,7 +288,9 @@ function Signup({ verifySuperAdmin }) {
                             </button>
                     }
                 </form>
-
+                <span style={{ float: 'left' }} >Already have an Account <label onClick={() => navigate('/')} className="form-check-labe" style={{ color: 'blue', cursor: 'pointer' }} htmlFor="remember">
+                    SignIn
+                </label></span>
 
             </div>
         </div>

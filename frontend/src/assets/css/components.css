@@ -15,7 +15,10 @@
   position: relative;
   overflow: hidden;
 }
-
+.list{
+  list-style-type: none;
+  text-align: left;
+}
 .btn::after {
   content: '';
   position: absolute;
@@ -817,6 +820,7 @@
 .ticket-card {
   text-align: left;
   background: var(--color-background);
+  color: black;
   border-radius: 16px;
   box-shadow: var(--shadow-md);
   padding: 24px;
@@ -852,7 +856,7 @@
 
 .ticket-card p {
   margin: 8px 0;
-  color: var(--color-text);
+  color: black;
 }
 
 .ticket-card strong {

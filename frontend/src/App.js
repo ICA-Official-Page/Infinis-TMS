@@ -4,19 +4,20 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
 import './assets/css/App.css';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import URI from './utills';
 import Signup from './pages/Signup';
 import SessionEndWarning from './components/SessionEndWarning';
 import toast from 'react-hot-toast';
+import { setSessionWarning } from './Redux/userSlice';
 
 function App() {
   const [loading, setLoading] = useState(true);
 
-  const { user, theme } = useSelector(store => store.user);
+  const { sessionWarning, user, theme } = useSelector(store => store.user);
   const [superAdmin, setSuperAdmin] = useState(false);
-  const [sessionWarning, setSessionWarning] = useState(false);
+  const dispatch = useDispatch();
 
   const verifySuperAdmin = async () => {
     try {
@@ -27,15 +28,15 @@ function App() {
       });
 
       if (res.data.notAuthorized) {
-        setSessionWarning(true);
+        dispatch(setSessionWarning(true))
       }
 
       setSuperAdmin(res.data.success);
     } catch (err) {
       if (err.response && err.response.data) {
         if (err.response.data.notAuthorized) {
-          setSessionWarning(true);
-        } 
+          dispatch(setSessionWarning(true))
+        }
         // else {
         //   toast.error(err.response.data.message || "Something went wrong");
         // }
@@ -44,7 +45,6 @@ function App() {
       }
     }
   }
-
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -56,13 +56,13 @@ function App() {
 
   return (
     <>
-
       <Router>
-        {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+        {sessionWarning && <SessionEndWarning />}
         <Routes>
           <Route path="/" element={
-            user ? <Navigate to="/dashboard" /> : superAdmin ? <Login /> : <Signup verifySuperAdmin={verifySuperAdmin} />
+            user ? <Navigate to="/dashboard" /> : <Login />
           } />
+          <Route path='/signup' element={<Signup />} />
           <Route path="/dashboard/*" element={
             user ? <Dashboard /> : <Navigate to="/" />
           } />

@@ -65,14 +65,14 @@ export const raiseTicket = async (req, res) => {
 
             const manageremail = await Manager.findOne({ branch: req.body.branch });
             const transporter = nodemailer.createTransport({
-                    service: 'gmail',
-                    auth: {
-                        user: process.env.USER_EMAIL,
-                        pass: process.env.EMAIL_PASS
-                    }
-                });
+                service: 'gmail',
+                auth: {
+                    user: process.env.USER_EMAIL,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
             if (manageremail && manageremail !== '') {
-                
+
 
                 const mailBody = {
                     from: process.env.USER_EMAIL,
@@ -195,39 +195,41 @@ export const updateTicketStatus = async (req, res) => {
                     pass: process.env.EMAIL_PASS
                 }
             });
-            const mailBody = {
-                from: process.env.USER_EMAIL,
-                // to: ticket.email,
-                to: executive.email,
-                subject: 'Your Ticket is Resolved',
-                html: `<p>Name: ${ticket?.name} <br>
+            if (executive && executive.email !== '') {
+                const mailBody = {
+                    from: process.env.USER_EMAIL,
+                    // to: ticket.email,
+                    to: executive.email,
+                    subject: 'Your Ticket is Resolved',
+                    html: `<p>Name: ${ticket?.name} <br>
                 Subject: ${ticket?.subject} <br>
                 Mobile: ${ticket?.mobile} <br> 
                 Category: ${ticket?.category} <br> 
                 Priority: ${ticket?.priority} <br>
                 ${ticket.department.map(dept =>
-                    `${dept?.name} : ${dept?.description} <br>
+                        `${dept?.name} : ${dept?.description} <br>
                     ${dept?.users?.map(user =>
-                        `${user} <br>`
-                    )}
+                            `${user} <br>`
+                        )}
                     `
-                )}
+                    )}
                 Actions on Ticket: <br>
                 ${ticket?.comments?.map(comment =>
-                    `${comment?.content}-${comment?.commenter}-${new Date(comment.createdAt).toLocaleString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true,
-                        timeZone: 'Asia/Kolkata'
-                    })
-                    } <br>`
-                )}  
+                        `${comment?.content}-${comment?.commenter}-${new Date(comment.createdAt).toLocaleString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                            timeZone: 'Asia/Kolkata'
+                        })
+                        } <br>`
+                    )}  
                 </p>`,
-            };
-            await transtporter.sendMail(mailBody);
+                };
+                await transtporter.sendMail(mailBody);
+            }
         }
         if (updated) {
             return res.status(200).json({

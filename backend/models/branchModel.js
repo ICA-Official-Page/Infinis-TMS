@@ -7,6 +7,7 @@ const branchSchema = new mongoose.Schema({
     admin: String,
     departments: Number,
     tickets: Number,
+    profile: String //logo
 }, { timestamps: true });
 
 const Branch = new mongoose.model('Branch', branchSchema);

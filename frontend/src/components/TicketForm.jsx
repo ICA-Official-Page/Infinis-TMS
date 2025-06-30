@@ -2,13 +2,14 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import URI from '../utills';
 import toast from 'react-hot-toast';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import SessionEndWarning from './SessionEndWarning';
+import { setSessionWarning } from '../Redux/userSlice';
 
 function TicketForm({ onCancel, initialData = null, fetchAllTickets }) {
 
-  const { user } = useSelector(store => store.user);
-
+  const { user,sessionWarning } = useSelector(store => store.user);
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     // email: initialData?.email || '',
@@ -26,7 +27,6 @@ function TicketForm({ onCancel, initialData = null, fetchAllTickets }) {
   const [selectedDepartment, setSelectedDepartment] = useState([]);
   const [executives, setExecutives] = useState({});
   const [ticketSettings, setTicketSettings] = useState({});
-  const [sessionWarning, setSessionWarning] = useState(false);
 
   const handleCheckboxChange = async (e) => {
     const value = e.target.value;
@@ -156,10 +156,6 @@ function TicketForm({ onCancel, initialData = null, fetchAllTickets }) {
       toast.error('name is required');
     }
 
-    // if (!formData?.email) {
-    //   newErrors.email = 'email is required';
-    //   toast.error('email is required');
-    // }
 
     if (!formData.subject) {
       newErrors.subject = 'subject is required';
@@ -169,20 +165,11 @@ function TicketForm({ onCancel, initialData = null, fetchAllTickets }) {
     if (!formData.mobile) {
       newErrors.mobile = 'mobile is required';
       toast.error('mobile is required');
-    } else if (!formData.mobile.length === 10) {
-      newErrors.mobile = 'mobile must be 10 characters';
-      toast.error('mobile must be 10 characters');
     }
-
-    // if (!formData?.date) {
-    //   newErrors.date = 'date is required';
-    //   toast.error('date is required');
-    // }
-
-    // if (!formData.time) {
-    //   newErrors.time = 'time is required';
-    //   toast.error('time is required');
-    // }
+    if (formData.mobile.length !== 10) {
+      newErrors.mobile = 'mobile must be 10 numbers';
+      toast.error('mobile must be 10 numbers');
+    }
 
     if (!formData.priority) {
       newErrors.priority = 'priority is required';
@@ -254,7 +241,7 @@ function TicketForm({ onCancel, initialData = null, fetchAllTickets }) {
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true));
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -275,11 +262,11 @@ function TicketForm({ onCancel, initialData = null, fetchAllTickets }) {
 
   return (
     <>
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
 
       <form className='form'>
         <div className="form-group">
-          <label htmlFor="name" className="form-label">Name</label>
+          <label htmlFor="name" className="form-label">Patient Name</label>
           <input
             type="text"
             id="name"
@@ -322,17 +309,21 @@ function TicketForm({ onCancel, initialData = null, fetchAllTickets }) {
 
         <div className="form-group">
           <label htmlFor="mobile" className="form-label">Mobile</label>
-          <input
-            type="number"
-            id="mobile"
-            name="mobile"
-            className={`form-control ${errors?.mobile ? 'border-error' : ''}`}
-            value={formData?.mobile}
-            onChange={handleChange}
-            placeholder="Enter Mobile Number"
-          />
+          <div className="flex" style={{ width: '100%' }}>
+            <span className="px-3 py-2 bg-gray-200 border border-r-0 rounded-l">+91</span>
+            <input
+              type="number"
+              id="mobile"
+              name="mobile"
+              className={`form-control ${errors?.mobile ? 'border-error' : ''} rounded-l-none`}
+              value={formData?.mobile}
+              onChange={handleChange}
+              placeholder="Enter Mobile Number"
+            />
+          </div>
           {errors?.mobile && <div className="text-error text-sm mt-1">{errors.mobile}</div>}
         </div>
+
 
         {/* <div className="form-group">
         <label htmlFor="date" className="form-label">Date</label>

@@ -2,13 +2,13 @@ import axios from 'axios';
 import React from 'react'
 import URI from '../utills';
 import { useDispatch } from 'react-redux';
-import { setUser } from '../Redux/userSlice';
+import { setUser,setSessionWarning } from '../Redux/userSlice';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 
 
-const SessionEndWarning = ({setSessionWarning}) => {
+const SessionEndWarning = () => {
 
     const dispatch = useDispatch();
     const navigate=useNavigate();
@@ -20,7 +20,7 @@ const SessionEndWarning = ({setSessionWarning}) => {
                     'Content-Type': 'aplication/json'
                 }
             }).then(res => {
-                setSessionWarning(false);
+                dispatch(setSessionWarning(false));
                 dispatch(setUser(null));
                 navigate('/');
                 toast.success(res?.data?.message);

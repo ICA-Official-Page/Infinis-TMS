@@ -20,6 +20,8 @@ import TicketStatusChart from '../../components/TicketStatusChart';
 import OpenTicketCategorization from '../../components/OpenTicketCategorization';
 import ReportBar from '../../components/ReportBar';
 import TicketCard from '../../components/TicketCard';
+import { setSessionWarning } from '../../Redux/userSlice';
+import { useDispatch, useSelector } from 'react-redux';
 
 function SuperAdminPanel({ user, view = 'overview' }) {
 
@@ -44,8 +46,9 @@ function SuperAdminPanel({ user, view = 'overview' }) {
   const [allUsers, setAllUsers] = useState([]);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sessionWarning, setSessionWarning] = useState(false);
 
+  const { sessionWarning } = useSelector(store => store.user);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Statistics
@@ -134,7 +137,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -382,7 +385,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -422,7 +425,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true))
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -455,7 +458,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -482,7 +485,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -509,7 +512,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -521,6 +524,27 @@ function SuperAdminPanel({ user, view = 'overview' }) {
       console.log('while delete ticket', error);
     }
   }
+
+  useEffect(() => {
+    if (view === 'overview') {
+      setShowBranchForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'branches') {
+      setShowUserForm(false);
+    }
+    else if (view === 'admins') {
+      setShowBranchForm(false);
+    }
+    else if (view === 'tickets') {
+      setShowBranchForm(false);
+      setShowUserForm(false);
+    }
+    else {
+      setShowBranchForm(false);
+      setShowUserForm(false);
+    }
+  }, [view])
 
   //components for render
   // Render different content based on the view
@@ -1096,7 +1120,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
 
   return (
     <div className="animate-fade">
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
 
       {renderContent()}
 

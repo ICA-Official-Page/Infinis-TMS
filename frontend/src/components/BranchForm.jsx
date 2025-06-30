@@ -5,6 +5,10 @@ import toast from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import SessionEndWarning from './SessionEndWarning';
+import CropperModal from './CropperModal';
+import LogoCropperModal from './LogoCropperModal';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSessionWarning } from '../Redux/userSlice';
 
 function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }) {
   const [formData, setFormData] = useState({
@@ -13,10 +17,24 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
     admin: initialData?.admin || ''
   });
 
+  const { sessionWarning } = useSelector(store => store.user);
+  const dispatch = useDispatch();
+
   const [errors, setErrors] = useState({});
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [sessionWarning, setSessionWarning] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [croppedProfile, setCroppedProfile] = useState(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState(1);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfile(file);
+      setShowCropper(true);
+    }
+  };
 
   //fetch users
   const fetchAllUsers = async () => {
@@ -70,6 +88,9 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
     if (!formData.location.trim()) {
       newErrors.location = 'Location is required';
     }
+    if (!profile) {
+      newErrors.profile = 'Logo is Required'
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -81,10 +102,16 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
     try {
       setLoading(true);
       if (validateForm()) {
-
-        const res = await axios.post(`${URI}/superadmin/createbranch`, formData, {
+        const formdata = new FormData();
+        formdata.append('name', formData?.name);
+        formdata.append('location', formData?.location);
+        if (formData?.admin) {
+          formdata.append('admin', formData?.admin);
+        }
+        formdata.append('profile', croppedProfile); //logo
+        const res = await axios.post(`${URI}/superadmin/createbranch`, formdata, {
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'multipart/form-data'
           },
           withCredentials: true
         }).then(res => {
@@ -94,13 +121,15 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
             name: '',
             location: '',
             admin: ''
-          })
+          });
+          setProfile(null);
+          setCroppedProfile(null);
           toast.success(res?.data?.message);
         }).catch(err => {
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true));
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -123,10 +152,17 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
     try {
       setLoading(true);
       e.preventDefault();
-
-      const res = await axios.post(`${URI}/superadmin/updatebranch`, { name: formData?.name, location: formData?.location, admin: formData?.admin, branchid: initialData?._id }, {
+      const formdata = new FormData();
+      formdata.append('name', formData?.name);
+      formdata.append('location', formData?.location);
+      formdata.append('branchid', initialData?._id)
+      if (formData?.admin) {
+        formdata.append('admin', formData?.admin);
+      }
+      formdata.append('profile', croppedProfile); //logo
+      const res = await axios.post(`${URI}/superadmin/updatebranch`, formdata, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'multipart/form-data'
         },
         withCredentials: true
       }).then(res => {
@@ -137,12 +173,14 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
           location: '',
           admin: '',
         });
+        setProfile(null);
+        setCroppedProfile(null);
         toast.success(res?.data?.message);
       }).catch(err => {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -167,7 +205,7 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
 
   return (
     <>
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
       <form>
         <div className="form-group">
           <label htmlFor="name" className="form-label">Branch Name</label>
@@ -196,6 +234,38 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
           />
           {errors.location && <div className="text-error text-sm mt-1">{errors.location}</div>}
         </div>
+
+        <div className="form-group">
+          <label htmlFor="" className="form-label">Branch Logo</label>
+          <label htmlFor="profile" className='form-label' style={{ backgroundColor: 'rgba(35, 225, 232, 0.9)', color: "white", padding: '2%', borderRadius: '12px' }}>{croppedProfile ? croppedProfile.name : profile ? profile.name : 'Upload Branch Logo'}</label>
+          <input
+            type="file"
+            id="profile"
+            name="profile"
+            style={{ display: 'none' }}
+            className=''
+            // value={profile}
+            onChange={handleFileChange}
+            placeholder="Enter full name"
+            accept='image/*'
+          />
+          {/* {croppedProfile && (
+                    <img src={URL.createObjectURL(croppedProfile)} alt="Cropped Preview" width="100" height="100" />
+                  )} */}
+
+          {showCropper && (
+            <LogoCropperModal
+              image={profile}
+              aspectRatio={aspectRatio}
+              onCropDone={(croppedImage) => {
+                setCroppedProfile(croppedImage);
+                setShowCropper(false);
+              }}
+              onClose={() => setShowCropper(false)}
+            />
+          )}
+          {errors.profile && <div className="text-error text-sm mt-1">{errors.profile}</div>}
+        </div> <br /> <br />
 
         <div className="form-group">
           <label htmlFor="admin" className="form-label">Branch Admin</label>

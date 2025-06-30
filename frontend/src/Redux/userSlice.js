@@ -6,7 +6,8 @@ const userSlice = createSlice({
     initialState: {
         user: null,
         theme: 'light',
-        notificationCount: 0
+        notificationCount: 0,
+        sessionWarning: false
     },
     reducers: {
         setUser: (state, action) => {
@@ -17,9 +18,12 @@ const userSlice = createSlice({
         },
         setNotificationCount: (state, action) => {
             state.notificationCount = action.payload;
+        },
+        setSessionWarning: (state, action) => {
+            state.sessionWarning = action.payload;
         }
     }
 });
 
-export const { setUser, setTheme, setNotificationCount } = userSlice.actions;
+export const { setUser, setTheme, setNotificationCount,setSessionWarning } = userSlice.actions;
 export default userSlice.reducer;

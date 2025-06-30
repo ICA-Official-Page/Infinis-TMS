@@ -10,7 +10,8 @@ const managerSchema = new mongoose.Schema({
     address: String,
     profile: String,
     branch: String,
-    designation: String
+    designation: String,
+    postdesignation: String
 }, { timestamps: true });
 
 const Manager = new mongoose.model('manager', managerSchema);

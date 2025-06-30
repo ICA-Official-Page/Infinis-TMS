@@ -10,7 +10,8 @@ const adminSchema = new mongoose.Schema({
     branches: Array,
     address: String,
     profile: String,
-    designation: String
+    designation: String,
+    postdesignation: String
 }, { timestamps: true });
 
 const Admin = new mongoose.model('admin', adminSchema);

@@ -15,8 +15,8 @@ import axios from 'axios';
 import URI from '../../utills';
 import toast from 'react-hot-toast';
 import SessionEndWarning from '../../components/SessionEndWarning';
-import { useDispatch } from 'react-redux';
-import { setNotificationCount } from '../../Redux/userSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { setNotificationCount, setSessionWarning } from '../../Redux/userSlice';
 import TicketStatusChart from '../../components/TicketStatusChart';
 import OpenTicketCategorization from '../../components/OpenTicketCategorization';
 import ReportBar from '../../components/ReportBar';
@@ -45,8 +45,8 @@ function ManagerPanel({ user, view = 'branch' }) {
   const [comment, setComment] = useState('');
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [loading, setLoading] = useState();
-  const [sessionWarning, setSessionWarning] = useState(false);
 
+  const { sessionWarning } = useSelector(store => store.user);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -183,7 +183,7 @@ function ManagerPanel({ user, view = 'branch' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -399,7 +399,7 @@ function ManagerPanel({ user, view = 'branch' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -468,7 +468,7 @@ function ManagerPanel({ user, view = 'branch' }) {
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true))
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -518,6 +518,7 @@ function ManagerPanel({ user, view = 'branch' }) {
         addCommentOnTicket(data, '');
         const res = await axios.post(`${URI}/executive/ticketreassign`, { ticketId: selectedTicket?._id, presentDept: selectedTicket?.department, reAssignto: reAssignto }, { withCredentials: true })
           .then(res => {
+            handleUpdateTicketStatus(selectedTicket?._id, 'open');
             fetchAllTickets();
             handleCloseModal();
             toast.success(res?.data?.message);
@@ -571,7 +572,7 @@ function ManagerPanel({ user, view = 'branch' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -723,7 +724,7 @@ function ManagerPanel({ user, view = 'branch' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -741,6 +742,34 @@ function ManagerPanel({ user, view = 'branch' }) {
       });
     }
   }
+
+  useEffect(() => {
+    if (view === 'branch') {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'team') {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'tickets') {
+      // setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+    else if (view === 'password-requests') {
+      setShowTicketForm(false);
+    }
+    else if (view === 'user-requests') {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+
+    else {
+      setShowTicketForm(false);
+      setShowUserForm(false);
+    }
+  }, [view])
+
   const renderContent = () => {
     switch (view) {
       case 'branch':
@@ -1406,6 +1435,69 @@ function ManagerPanel({ user, view = 'branch' }) {
                 </div>
               )}
             </div>
+          </div><br />
+          <div className="card">
+            <h2 className="text-xl font-bold">Raised By You</h2>
+            <div className="card-body p-0">
+              {filteredTickets?.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Ticket Id</th>
+                        <th>Name</th>
+                        <th>Subject</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTickets?.map((ticket, index) => (
+                        ticket?.issuedby === `${user?.username}${user?.department ? ` - ${user.department}` : ''} (${user?.designation})` &&
+                        <tr key={ticket?.id}>
+                          <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
+                          <td>{ticket?.name}</td>
+                          {/* <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
+                            ticket?.status === 'in-progress' ? 'badge-primary' :
+                              'badge-success'
+                            }`}>
+                            {ticket?.status === 'in-progress' ? 'In Progress' :
+                              ticket?.status?.charAt(0).toUpperCase() + ticket?.status?.slice(1)}
+                          </span> */}
+
+                          <td>
+                            {ticket?.subject}
+                            {/* <span className={`badge ${ticket?.priority === 'high' ? 'badge-error' :
+                            ticket?.priority === 'medium' ? 'badge-warning' :
+                              'badge-primary'
+                            }`}>
+                            {ticket?.priority?.charAt(0).toUpperCase() + ticket?.priority?.slice(1)}
+                          </span> */}
+                          </td>
+                          {/* <td>{formatDate(ticket?.createdAt)}</td> */}
+                          <td>
+                            <div className="flex gap-2" style={{ justifyContent: 'center' }}>
+                              {ticket?.status === 'resolved' && (
+                                <button className="btn btn-sm btn-success" style={{ background: 'green' }} onClick={() => handleUpdateTicketStatus(ticket?._id, 'closed')}>Close</button>
+                              )}
+                              <button
+                                className="btn btn-sm btn-outline"
+                                onClick={() => handleViewTicket(ticket)}
+                              >
+                                View
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-4 text-center">
+                  <p className="text-muted">No tickets found. Create a new ticket to get started!</p>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
@@ -1781,7 +1873,7 @@ function ManagerPanel({ user, view = 'branch' }) {
 
   return (
     <div className="animate-fade">
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
       {renderContent()}
       {/* Ticket Detail Modal */}
       {isModalOpen && selectedTicket && (

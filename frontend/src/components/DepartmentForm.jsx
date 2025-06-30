@@ -2,12 +2,14 @@ import axios from 'axios';
 import { useState } from 'react';
 import URI from '../utills';
 import toast from 'react-hot-toast';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import SessionEndWarning from './SessionEndWarning';
+import { setSessionWarning } from '../Redux/userSlice';
 
 function DepartmentForm({ onSubmit, onCancel, initialData = null, allUsers = [], fetchDepartment }) {
 
-  const { user } = useSelector(store => store.user);
+  const { user, sessionWarning } = useSelector(store => store.user);
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -19,8 +21,6 @@ function DepartmentForm({ onSubmit, onCancel, initialData = null, allUsers = [],
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [sessionWarning, setSessionWarning] = useState(false);
-
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -92,7 +92,7 @@ function DepartmentForm({ onSubmit, onCancel, initialData = null, allUsers = [],
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true));
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -142,7 +142,7 @@ function DepartmentForm({ onSubmit, onCancel, initialData = null, allUsers = [],
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -161,7 +161,7 @@ function DepartmentForm({ onSubmit, onCancel, initialData = null, allUsers = [],
 
   return (
     <>
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
       <form>
         <div className="form-group">
           <label htmlFor="name" className="form-label">Department Name</label>

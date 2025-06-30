@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { faDyalog } from '@fortawesome/free-brands-svg-icons'
 import { faBell, faBuilding, faChartBar, faComment, faMoon, faSun, faUser } from '@fortawesome/free-regular-svg-icons'
@@ -15,25 +15,23 @@ import NotFound from './NotFound';
 import '../assets/css/components.css';
 import '../assets/css/dashboard.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { setNotificationCount, setTheme, setUser } from '../Redux/userSlice';
+import { setNotificationCount, setTheme, setUser,setSessionWarning } from '../Redux/userSlice';
 import axios from 'axios';
 import URI from '../utills';
 import toast from 'react-hot-toast';
 import SessionEndWarning from '../components/SessionEndWarning';
+// import { useIdleLogout } from '../components/useIdleLogout';
 
 function Dashboard() {
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
-  const { user, theme, notificationCount } = useSelector(store => store.user);
+  const { user, theme, notificationCount,sessionWarning } = useSelector(store => store.user);
 
   const [sidebarExpanded, setSidebarExpanded] = useState(window.innerWidth >= 1024);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [pageTitle, setPageTitle] = useState('Dashboard');
   // const [notificationCount, setNotificationCount] = useState(0);
-
-  const [sessionWarning, setSessionWarning] = useState(false);
-
 
   const fetchNotification = async () => {
     try {
@@ -76,7 +74,7 @@ function Dashboard() {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -108,6 +106,54 @@ function Dashboard() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Inside Dashboard component
+  useEffect(() => {
+    const timeoutId = { current: null };
+
+    const resetTimer = () => {
+      if (timeoutId.current) clearTimeout(timeoutId.current);
+      timeoutId.current = setTimeout(() => {
+        dispatch(setSessionWarning(true)); 
+      }, 5 * 60 * 1000); // 5 mins
+    };
+
+    const events = ['mousemove', 'keydown', 'scroll', 'click'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer();
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+      clearTimeout(timeoutId.current);
+    };
+  }, []);
+
+  const useIdleLogout = (onIdleCallback, timeout = 5 * 60 * 1000) => {
+    const timeoutId = useRef(null);
+
+    const resetTimer = () => {
+      if (timeoutId.current) clearTimeout(timeoutId.current);
+      timeoutId.current = setTimeout(() => {
+        onIdleCallback(); // ✅ Use whatever logic you want
+      }, timeout);
+    };
+
+    useEffect(() => {
+      const events = ['mousemove', 'keydown', 'scroll', 'click'];
+      events.forEach(event => window.addEventListener(event, resetTimer));
+      resetTimer();
+
+      return () => {
+        events.forEach(event => window.removeEventListener(event, resetTimer));
+        clearTimeout(timeoutId.current);
+      };
+    }, []);
+  };
+
+  useIdleLogout(() => {
+    dispatch(setSessionWarning(true));
+  }, 5 * 60 * 1000);
+
 
   // Set page title based on current route
   useEffect(() => {
@@ -158,6 +204,8 @@ function Dashboard() {
         return 'Password Requests'
       case 'user-requests':
         return 'User Requests'
+      case 'admins':
+        return 'Admin Management'
       default:
         return 'Dashboard';
     }
@@ -428,9 +476,43 @@ function Dashboard() {
 
   };
 
+  const [branch, setBranch] = useState('');
+
+  const fetchBranches = async () => {
+    try {
+      const res = await axios.get(`${URI}/superadmin/branches`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).then(res => {
+        if (!user?.designation?.includes('admin')) {
+          const userBranch = res?.data?.branches?.find(br => br?.name === user?.branch);
+          setBranch(userBranch);
+          console.log(userBranch.profile);
+        }
+      }).catch(err => {
+        // Handle error and show toast
+        if (err.response && err.response.data && err.response.data.message) {
+          toast.error(err.response.data.message); // For 400, 401, etc.
+        } else {
+          toast.error("Something went wrong");
+        }
+      });
+    } catch (error) {
+      console.log('while geting branches for super admin', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
   return (
-    <div className="dashboard">
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+    <div
+      className={`dashboard ${sidebarExpanded ? 'sidebar-expanded' : ''}`}
+
+    >
+      {sessionWarning && <SessionEndWarning />}
 
       {/* Sidebar for all panels */}
       <aside className={`sidebar ${sidebarExpanded ? 'expanded' : ''}`}>
@@ -439,8 +521,8 @@ function Dashboard() {
             {sidebarExpanded ? <FontAwesomeIcon icon={faTimes} /> : <FontAwesomeIcon icon={faBars} />}
           </button>
           <div className="sidebar-logo">
-            <span className="sidebar-logo-icon"><img src="/favicon.ico" alt="LOGO" /></span>
-            <span className="sidebar-logo-text">TMS</span>
+            <span className="sidebar-logo-icon"><img src={"/favicon.ico"} alt="LOGO" /></span>
+            <span className="sidebar-logo-text">Ticketing System</span>
           </div>
         </div>
 
@@ -476,11 +558,16 @@ function Dashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className={`main-content ${sidebarExpanded ? 'sidebar-expanded' : ''}`}>
+      <main className={`main-content ${sidebarExpanded ? 'sidebar-expanded' : ''}`}  >
+        <div
+          className={`main-content-bg ${sidebarExpanded ? 'sidebar-expanded' : ''}`}
+          style={{ backgroundImage: `url(${branch?.profile})` }}
+        ></div>
+
         <div className="top-nav">
           <div className="top-nav-left">
             {
-              user?.designation === 'Executive' ? '' :
+              user?.designation === 'Executive' || location.pathname === '/dashboard/overview' ? '' :
                 <button className="sidebar-toggle"
                   // hidden-sm mr-3"
                   onClick={() => navigate('/dashboard/overview')}>

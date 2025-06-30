@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import '../assets/css/login.css';
 import mockUsers from '../data/mockUsers';
 import { useDispatch } from 'react-redux';
@@ -8,12 +8,13 @@ import toast from 'react-hot-toast';
 import { setUser } from '../Redux/userSlice';
 import { faDyalog } from '@fortawesome/free-brands-svg-icons'
 import { faBell, faBuilding, faChartBar, faComment, faEye, faEyeSlash, faMoon, faSun, faUser } from '@fortawesome/free-regular-svg-icons'
-import { faAdd, faBars, faChartLine, faCodePullRequest, faCog, faCommentDots, faGear, faLock, faPersonCircleQuestion, faPlusSquare, faSignOut, faTicketAlt, faTimes, faUserCog, faUsers, faUsersCog } from '@fortawesome/free-solid-svg-icons'
+import { faAdd, faBars, faChartLine, faCodePullRequest, faCog, faCommentDots, faGear, faLeaf, faLock, faPersonCircleQuestion, faPlusSquare, faSignOut, faTicketAlt, faTimes, faUserCog, faUsers, faUsersCog } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const dispatch = useDispatch();
-
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [npassword, setNpassword] = useState('');
@@ -24,6 +25,7 @@ function Login() {
   const [cpassword, setCPassword] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const [loadingF, setLoadingF] = useState(false);
 
   const GenerateRandomOTP = (lenth) => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -37,6 +39,7 @@ function Login() {
 
   const forgetPassword = async () => {
     try {
+      setLoadingF(true);
       if (!email) {
         toast.error('Please fill the Email field!');
       }
@@ -121,6 +124,9 @@ function Login() {
       }
     } catch (error) {
       console.log("while sending forget password request", error);
+    }
+    finally {
+      setLoadingF(false);
     }
   }
 
@@ -208,7 +214,7 @@ function Login() {
             </div>
             <div className="login-card animate-fade">
               <div className="login-header">
-                <h1>Infinis TMS</h1>
+                <h1>Infinis Ticketing System</h1>
                 <p className="text-muted">Update your Password</p>
               </div>
 
@@ -279,7 +285,7 @@ function Login() {
             </div>
             <div className="login-card animate-fade">
               <div className="login-header">
-                <h1>Infinis TMS</h1>
+                <h1>Infinis Ticketing System</h1>
                 <p className="text-muted">Sign in to your account</p>
               </div>
 
@@ -329,10 +335,19 @@ function Login() {
                       Sign In
                     </button>
                 }
-                <label className="form-check-label" style={{ color: 'blue' }} htmlFor="remember" onClick={forgetPassword}>
-                  forget password
-                </label>
+                {
+                  loadingF ? <label className="form-check-label">
+                    <img src="/img/loader.png" className='Loader' alt="loader" />
+                  </label>
+                    :
+                    <label className="form-check-label" style={{ color: 'blue' }} htmlFor="remember" onClick={forgetPassword}>
+                      forget password
+                    </label>
+                }
               </form>
+              <span style={{ float: 'left' }} >Administrator <label onClick={() => navigate('/signup')} className="form-check-labe" style={{ color: 'blue', cursor: 'pointer' }} htmlFor="remember">
+                SignUp
+              </label></span>
             </div>
           </div>
       }

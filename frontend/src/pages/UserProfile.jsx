@@ -5,13 +5,14 @@ import axios from 'axios';
 import URI from '../utills'
 import toast from 'react-hot-toast';
 import SessionEndWarning from '../components/SessionEndWarning';
-import { setUser } from '../Redux/userSlice';
+import { setSessionWarning, setUser } from '../Redux/userSlice';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons';
+import CropperModal from '../components/CropperModal';
 
 function UserProfile() {
 
-  const { user } = useSelector(store => store.user);
+  const { sessionWarning, user } = useSelector(store => store.user);
   const dispatch = useDispatch();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -22,6 +23,16 @@ function UserProfile() {
     mobile: user?.mobile
   });
   const [profile, setProfile] = useState(null);
+  const [croppedProfile, setCroppedProfile] = useState(null);
+  const [showCropper, setShowCropper] = useState(false);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfile(file);
+      setShowCropper(true);
+    }
+  };
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -36,8 +47,6 @@ function UserProfile() {
   const [loadingCS, setLoadingCS] = useState(false);
   const [loadingE, setLoadingE] = useState(false);
   const [loadingES, setLoadingES] = useState(false);
-  const [sessionWarning, setSessionWarning] = useState(false);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -107,7 +116,7 @@ function UserProfile() {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -180,7 +189,7 @@ function UserProfile() {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -233,7 +242,7 @@ function UserProfile() {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -343,7 +352,7 @@ function UserProfile() {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true))
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -385,7 +394,7 @@ function UserProfile() {
 
   return (
     <div className="animate-fade">
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">User Profile</h2>
       </div>
@@ -440,6 +449,14 @@ function UserProfile() {
                     {user?.address}
                   </p>
                 </div>
+                {
+                  user?.postdesignation && (
+                    <div>
+                      <p className="text-sm text-muted">Designation</p>
+                      <p className="font-medium">{user?.postdesignation}</p>
+                    </div>
+                  )
+                }
                 {user?.branch && (
                   <div>
                     <p className="text-sm text-muted">Branch</p>
@@ -448,7 +465,7 @@ function UserProfile() {
                 )}
                 <div>
                   <p className="text-sm text-muted">Mobile Number</p>
-                  <p className="font-medium">{user?.mobile}</p>
+                  <p className="font-medium"><span className="px-3 py-2 bg-gray-200 border border-r-0 rounded-l">+91 {user?.mobile}</span></p>
                 </div>
                 {user?.branches && (
                   <div>
@@ -535,7 +552,7 @@ function UserProfile() {
 
                 <div className="form-group">
                   <label htmlFor="" className="form-label">Profile Picture</label>
-                  <label htmlFor="profile" className='form-label' style={{ backgroundColor: 'rgba(35, 225, 232, 0.9)', color: "white", padding: '2%', borderRadius: '12px' }}>{profile ? profile?.name : 'Upload a Profile Picture'}</label>
+                  <label htmlFor="profile" className='form-label' style={{ backgroundColor: 'rgba(35, 225, 232, 0.9)', color: "white", padding: '2%', borderRadius: '12px' }}>{croppedProfile ? croppedProfile.name : profile ? profile.name : 'Upload a Profile Picture'}</label>
                   <input
                     type="file"
                     id="profile"
@@ -543,9 +560,19 @@ function UserProfile() {
                     style={{ display: 'none' }}
                     className=''
                     // value={profile}
-                    onChange={(e) => setProfile(e.target.files[0])}
+                    onChange={handleFileChange}
                     placeholder="Enter full name"
                   />
+                  {showCropper && (
+                    <CropperModal
+                      image={profile}
+                      onCropDone={(croppedImage) => {
+                        setCroppedProfile(croppedImage);
+                        setShowCropper(false);
+                      }}
+                      onClose={() => setShowCropper(false)}
+                    />
+                  )}
                   {errors.name && <div className="text-error text-sm mt-1">{errors.name}</div>}
                 </div>
 
@@ -672,49 +699,49 @@ function UserProfile() {
           ) : (
             <>
               <div className="card-header">
-                <h3>Activity Summary</h3>
+                <h3>About Profile</h3>
               </div>
               <div className="card-body">
                 <div className="mb-4">
                   <h4 className="text-md font-medium mb-2">Your Role Permissions</h4>
-                  <ul className="list-disc pl-5">
+                  <ul className="list list-disc pl-5"  >
                     {user?.designation === 'Executive' && (
                       <>
-                        <li>Create and view your own tickets</li>
-                        <li>Request password changes</li>
-                        <li>Update your profile information</li>
+                        <li> ➕ Create and view your own tickets</li>
+                        <li> 📃 Request password changes</li>
+                        <li> 🖋️ Update your profile information</li>
                       </>
                     )}
                     {user?.designation === 'Manager' && (
                       <>
-                        <li>View all executives in your department</li>
-                        <li>View all tickets in your department</li>
-                        <li>View password update requests by executives</li>
-                        <li>Access department analytics and reports</li>
+                        <li>➕ Create Team Leaders and Executives</li>
+                        <li> 📝 Manage departments in your branch</li>
+                        <li> 🎗️ Full access to all tickets in your branch</li>
+                        <li> 🉑 Approve password requests for Team Leaders and Executives</li>
                       </>
                     )}
                     {user?.designation === 'Team Leader' && (
                       <>
-                        <li>Create, edit, and delete executives</li>
-                        <li>Manage tickets in your department</li>
-                        <li>Approve password change requests</li>
-                        <li>Assign tickets to team members</li>
+                        <li> ➕ Create, edit, and delete executives</li>
+                        <li> 📝 Manage tickets in your department</li>
+                        <li> 🉑 Approve password change requests</li>
+                        {/* <li>  Assign tickets to team members</li> */}
                       </>
                     )}
                     {user?.designation === 'admin' && (
                       <>
-                        <li>Create team leaders and managers</li>
-                        <li>Manage departments in your branch</li>
-                        <li>Full access to all tickets in your branch</li>
-                        <li>Approve password requests for team leaders and managers</li>
+                        <li> ➕ Create Team Leaders,Executives and Managers</li>
+                        <li> 📝 Manage departments in your branches</li>
+                        <li> 🎗️ Full access to all tickets in your branches</li>
+                        <li> 🉑 Approve password requests for Team Leaders and Managers</li>
                       </>
                     )}
                     {user?.designation === 'superadmin' && (
                       <>
-                        <li>Create and manage all branches</li>
-                        <li>Create and manage admin accounts</li>
-                        <li>Full system access and override capabilities</li>
-                        <li>System-wide configuration and settings</li>
+                        <li> ➕ Create and manage all branches</li>
+                        <li> ➕ Create and manage admin accounts</li>
+                        <li> 🎗️ Full system access and override capabilities</li>
+                        <li> ⚙️ System-wide configuration and settings</li>
                       </>
                     )}
                   </ul>
@@ -726,9 +753,9 @@ function UserProfile() {
                       <p className="text-sm">Logged in from new device</p>
                       <p className="text-xs text-muted">Today, 10:45 AM</p>
                     </div> */}
-                    <div className="p-2 bg-gray-100 rounded">
-                      <p className="text-sm">Profile information updated</p>
-                      <p className="text-xs text-muted">{formatDate(user?.updatedAt)}</p>
+                    <div className="p-2 bg-gray-100 rounded" style={{ display: 'flex', gap: '10%' }} >
+                      <p className=" list text-sm"> ✍️ Profile information updated</p>
+                      <span className=" text-xs text-muted">{formatDate(user?.updatedAt)}</span>
                     </div>
                     {/* <div className="p-2 bg-gray-100 rounded">
                       <p className="text-sm">Password changed</p>
@@ -761,7 +788,7 @@ function UserProfile() {
                                       className="btn btn-outline"
                                       onClick={() => ReqToEditProfile('Change Password', 'pending')}
                                     >
-                                      <span>Req. for Change Password</span>
+                                      <span>Request for Change Password</span>
                                     </button>
                                 }
                               </>
@@ -778,7 +805,7 @@ function UserProfile() {
                                 className="btn btn-outline"
                                 disabled
                               >
-                                Change Password Req. Pending
+                                Change Password Request Pending
                               </button>
                             ) :
                               <>
@@ -791,7 +818,7 @@ function UserProfile() {
                                       className="btn btn-outline"
                                       onClick={() => ReqToEditProfile('Change Password', 'pending')}
                                     >
-                                      <span>Req. for Change Password</span>
+                                      <span>Request for Change Password</span>
                                     </button>
                                 }
                               </>
@@ -822,7 +849,7 @@ function UserProfile() {
                                       className="btn btn-primary"
                                       onClick={() => ReqToEditProfile('Edit Profile', 'pending')}
                                     >
-                                      Req. for Edit Profile
+                                      Request for Edit Profile
                                     </button>
                                 }
                               </>
@@ -838,7 +865,7 @@ function UserProfile() {
                                 className="btn btn-outline"
                                 disabled
                               >
-                                Edit Profile Req. Pending
+                                Edit Profile Request Pending
                               </button>
                             ) :
                               (
@@ -852,7 +879,7 @@ function UserProfile() {
                                         className="btn btn-primary"
                                         onClick={() => ReqToEditProfile('Edit Profile', 'pending')}
                                       >
-                                        Req. for Edit Profile
+                                        Request for Edit Profile
                                       </button>
                                   }
                                 </>

@@ -11,6 +11,8 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons';
 import SessionEndWarning from '../../components/SessionEndWarning';
 import ReportBar from '../../components/ReportBar';
 import TicketCard from '../../components/TicketCard';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSessionWarning } from '../../Redux/userSlice';
 
 function ExecutivePanel({ user, view = 'tickets' }) {
   const [tickets, setTickets] = useState([]);
@@ -35,7 +37,9 @@ function ExecutivePanel({ user, view = 'tickets' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState();
-  const [sessionWarning, setSessionWarning] = useState(false);
+
+  const dispatch = useDispatch();
+  const { sessionWarning } = useSelector(store => store.user);
 
   const handlePriorityUpdate = async () => {
     try {
@@ -86,7 +90,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
       // Handle error and show toast
       if (err.response && err.response.data) {
         if (err.response.data.notAuthorized) {
-          setSessionWarning(true);
+          dispatch(setSessionWarning(true));
         } else {
           toast.error(err.response.data.message || "Something went wrong");
         }
@@ -286,6 +290,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
         addCommentOnTicket(data, '');
         const res = await axios.post(`${URI}/executive/ticketreassign`, { ticketId: selectedTicket?._id, presentDept: selectedTicket?.department, reAssignto: reAssignto }, { withCredentials: true })
           .then(res => {
+            handleUpdateTicketStatus(selectedTicket?._id, 'open');
             fetchAllTickets();
             handleCloseModal();
             toast.success(res?.data?.message);
@@ -336,7 +341,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
           // Handle error and show toast
           if (err.response && err.response.data) {
             if (err.response.data.notAuthorized) {
-              setSessionWarning(true);
+              dispatch(setSessionWarning(true));
             } else {
               toast.error(err.response.data.message || "Something went wrong");
             }
@@ -376,7 +381,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
         // Handle error and show toast
         if (err.response && err.response.data) {
           if (err.response.data.notAuthorized) {
-            setSessionWarning(true);
+            dispatch(setSessionWarning(true));
           } else {
             toast.error(err.response.data.message || "Something went wrong");
           }
@@ -422,7 +427,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
 
   return (
     <div className="animate-fade">
-      {sessionWarning && <SessionEndWarning setSessionWarning={setSessionWarning} />}
+      {sessionWarning && <SessionEndWarning />}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">My Tickets</h2>
         <button
@@ -504,6 +509,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
                   <table className="table table-hover">
                     <thead>
                       <tr>
+                        <th>Ticket Id</th>
                         <th>Name</th>
                         <th>Subject</th>
                         <th>Action</th>
@@ -513,6 +519,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
                       {filteredTickets?.map((ticket, index) => (
                         ticket?.issuedby === `${user?.username}${user?.department ? ` - ${user.department}` : ''} (${user?.designation})` &&
                         <tr key={ticket?.id}>
+                          <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
                           <td>{ticket?.name}</td>
                           {/* <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
                             ticket?.status === 'in-progress' ? 'badge-primary' :
@@ -533,12 +540,17 @@ function ExecutivePanel({ user, view = 'tickets' }) {
                           </td>
                           {/* <td>{formatDate(ticket?.createdAt)}</td> */}
                           <td>
-                            <button
-                              className="btn btn-sm btn-outline"
-                              onClick={() => handleViewTicket(ticket)}
-                            >
-                              View
-                            </button>
+                            <div className="flex gap-2" style={{ justifyContent: 'center' }}>
+                              {ticket?.status === 'resolved' && (
+                                <button className="btn btn-sm btn-success" style={{ background: 'green' }} onClick={() => handleUpdateTicketStatus(ticket?._id, 'closed')}>Close</button>
+                              )}
+                              <button
+                                className="btn btn-sm btn-outline"
+                                onClick={() => handleViewTicket(ticket)}
+                              >
+                                View
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -562,6 +574,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
                     <thead>
                       <tr>
                         {/* <th>ID</th> */}
+                        <th>Ticket Id</th>
                         <th>Name</th>
                         <th>Status</th>
                         <th>T.A.T.</th>
@@ -578,6 +591,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
                             ticket?.status === 'in-progress' &&
                             <tr key={ticket?.id}>
                               {/* <td>#{index + 1}</td> */}
+                              <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
                               <td>{ticket?.name}</td>
                               <td>
                                 <span className={`badge ${ticket?.status === 'open' ? 'badge-warning' :
@@ -651,6 +665,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
                             ticket?.status === 'open' &&
                             <tr key={ticket?.id}>
                               {/* <td>#{index + 1}</td> */}
+                              <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
                               <td>{ticket?.name}</td>
 
                               <td>
@@ -725,6 +740,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
                             ticket?.status === 'resolved' &&
                             <tr key={ticket?.id}>
                               {/* <td>#{index + 1}</td> */}
+                              <td style={{ textAlign: 'center' }}>{ticket?.ticketId}</td>
                               <td>{ticket?.name}</td>
 
                               <td>
