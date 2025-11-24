@@ -26,7 +26,7 @@ export const addUser = async (req, res) => {
 
         let imageUrl;
         if (req.file) {
-            imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+            imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
         }
 
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
@@ -99,6 +99,7 @@ export const addUser = async (req, res) => {
             }
         }
         const us = await user.save();
+        const branchlogo = await Branch.findOne({ name: req.body.branch });
         //set nodemailer transport
         const transtporter = nodemailer.createTransport({
             service: 'gmail',
@@ -107,14 +108,108 @@ export const addUser = async (req, res) => {
                 pass: process.env.EMAIL_PASS
             }
         });
+
+        const htmlContentofMail = `<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Account Created - Your Credentials</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .logo {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .logo img {
+        max-width: 160px;
+      }
+
+      h2 {
+        color: #2c3e50;
+        text-align: center;
+      }
+
+      p {
+        color: #555555;
+        line-height: 1.6;
+      }
+
+      .credentials-box {
+        background-color: #f0f8ff;
+        border-left: 4px solid #3498db;
+        padding: 15px;
+        margin-top: 20px;
+        font-family: monospace;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #888888;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+
+      <!-- Logo -->
+      <div class="logo">
+        <img src="${branchlogo?.profile}" alt="S. R. Kalla Memorial Hospital Logo" />
+      </div>
+
+      <h2>Welcome to ICA!</h2>
+
+      <p>Hi <strong>${req.body.name}</strong>,</p>
+
+      <p>
+        Your account has been successfully created on our platform. You can now log in using the following credentials:
+      </p>
+
+      <div class="credentials-box">
+        <p><strong>Email:</strong> ${req.body.email}</p>
+        <p><strong>Password:</strong> ${req.body.password}</p>
+      </div>
+
+      <p>
+        For security reasons, we recommend that you change your password after your first login.
+      </p>
+
+      <p>
+        You can log in here: <a href="https://tms.infinis.io">https://tms.infinis.io</a>
+      </p>
+
+      <p>Thank you for joining us!<br />— The Infinis Team</p>
+
+    </div>
+  </body>
+</html>`;
+
+
         //body of mail
         const mailBody = {
             from: process.env.USER_EMAIL,
             to: req?.body?.email,
             subject: 'Account Credentials for Infinis Ticketing System.',
-            html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
-                    <strong>Password:</strong><span>${req?.body?.password}</span>
-                    `,
+            html: htmlContentofMail,
+            // `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+            //         <strong>Password:</strong><span>${req?.body?.password}</span>
+            //         `,
         };
         let info = await transtporter.sendMail(mailBody);
         return res.status(200).json({
@@ -129,6 +224,101 @@ export const addUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     try {
+        const branchlogo = await Branch.findOne({ name: req?.body?.branch });
+const htmlContentofMail = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Account Credentials Updated</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        color: #d35400;
+        text-align: center;
+      }
+
+      p {
+        color: #555555;
+        line-height: 1.6;
+      }
+
+      .credentials-box {
+        background-color: #fffaf0;
+        border-left: 4px solid #e67e22;
+        padding: 15px;
+        margin-top: 20px;
+        font-family: monospace;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #888888;
+        font-size: 13px;
+      }
+
+      .logo-container {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .logo-container img {
+        max-width: 160px;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      
+      <!-- Logo Added Here -->
+      <div class="logo-container">
+        <img src="${branchlogo?.profile}" alt="Hospital Logo" />
+      </div>
+
+      <h2>Account Credentials Updated</h2>
+
+      <p>Hi <strong>${req.body.name}</strong>,</p>
+
+      <p>
+        This is to inform you that your account credentials have been updated successfully. You can now use the following updated credentials to log in:
+      </p>
+
+      <div class="credentials-box">
+        <p><strong>Email:</strong> ${req.body.email}</p>
+        <p><strong>New Password:</strong> ${req.body.password}</p>
+      </div>
+
+      <p>
+        If you did not request this change or think this was a mistake, please contact our support team immediately.
+      </p>
+
+      <p>
+        You can login here: <a href="https://tms.infinis.io">https://tms.infinis.io</a>
+      </p>
+
+      <p>Thank you,<br />— The Infinis Team</p>
+
+      <div class="footer">© ${new Date().getFullYear()} ICA. All rights reserved.</div>
+    </div>
+  </body>
+</html>`;
+
         const userId = req.body.userid;
         let user;
         let userUpdated = false;
@@ -157,14 +347,18 @@ export const updateUser = async (req, res) => {
                         pass: process.env.EMAIL_PASS
                     }
                 });
+
+
+
                 //body of mail
                 const mailBody = {
                     from: process.env.USER_EMAIL,
                     to: req?.body?.email,
                     subject: 'New Account Credentials for Infinis Ticketing System.',
-                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
-                    <strong>Password:</strong><span>${req?.body?.password}</span>
-                    `,
+                    html: htmlContentofMail,
+                    // `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    // <strong>Password:</strong><span>${req?.body?.password}</span>
+                    // `,
                 };
                 let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
@@ -196,7 +390,7 @@ export const updateUser = async (req, res) => {
                 userUpdated = true;
             }
             if (req?.file) {
-                const imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+                const imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
                 const profile = await User.findByIdAndUpdate(userId, { profile: imageUrl });
                 userUpdated = true;
             }
@@ -231,9 +425,10 @@ export const updateUser = async (req, res) => {
                     from: process.env.USER_EMAIL,
                     to: req?.body?.email,
                     subject: 'New Account Credentials for Infinis Ticketing System.',
-                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
-                    <strong>Password:</strong><span>${req?.body?.password}</span>
-                    `,
+                    html: htmlContentofMail
+                    // `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    // <strong>Password:</strong><span>${req?.body?.password}</span>
+                    // `,
                 };
                 let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
@@ -260,7 +455,7 @@ export const updateUser = async (req, res) => {
                 userUpdated = true;
             }
             if (req?.file) {
-                const imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+                const imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
                 const profile = await Manager.findByIdAndUpdate(userId, { profile: imageUrl });
                 userUpdated = true;
             }
@@ -296,9 +491,10 @@ export const updateUser = async (req, res) => {
                     from: process.env.USER_EMAIL,
                     to: req?.body?.email,
                     subject: 'New Account Credentials for Infinis Ticketing System.',
-                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
-                    <strong>Password:</strong><span>${req?.body?.password}</span>
-                    `,
+                    html: htmlContentofMail,
+                    // `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    // <strong>Password:</strong><span>${req?.body?.password}</span>
+                    // `,
                 };
                 let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
@@ -314,6 +510,7 @@ export const updateUser = async (req, res) => {
             }
             if (req.body?.department && user?.department !== req?.body?.department) {
                 const department = await TeamLeader.findByIdAndUpdate(userId, { department: req.body.department });
+                const tlindept = await Department.findOneAndUpdate({ name: req?.body?.department},{teamleader:req?.body?.username})
                 const notifyDepartment = await Notification.findOneAndUpdate({ user: userId }, { dept: req.body.department });
                 userUpdated = true;
             }
@@ -330,7 +527,7 @@ export const updateUser = async (req, res) => {
                 userUpdated = true;
             }
             if (req?.file) {
-                const imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+                const imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
                 const profile = await TeamLeader.findByIdAndUpdate(userId, { profile: imageUrl });
                 userUpdated = true;
             }
@@ -366,9 +563,10 @@ export const updateUser = async (req, res) => {
                     from: process.env.USER_EMAIL,
                     to: req?.body?.email,
                     subject: 'New Account Credentials for Infinis Ticketing System.',
-                    html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
-                    <strong>Password:</strong><span>${req?.body?.password}</span>
-                    `,
+                    html: htmlContentofMail,
+                    // `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+                    // <strong>Password:</strong><span>${req?.body?.password}</span>
+                    // `,
                 };
                 let info = await transtporter.sendMail(mailBody);
                 userUpdated = true;
@@ -435,7 +633,7 @@ export const updateUser = async (req, res) => {
                 userUpdated = true;
             }
             if (req?.file) {
-                const imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+                const imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
                 const profile = await Admin.findByIdAndUpdate(userId, { profile: imageUrl });
                 userUpdated = true;
             }
@@ -474,7 +672,7 @@ export const updateUser = async (req, res) => {
                 userUpdated = true;
             }
             if (req?.file) {
-                const imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+                const imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
                 const profile = await SuperAdmin.findByIdAndUpdate(userId, { profile: imageUrl });
                 userUpdated = true;
             }

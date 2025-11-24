@@ -587,7 +587,7 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
             {
               (branches && branches.length > 0) ? (
                 (() => {
-                  const notAssignedBranches = branches.find(br => br.admin === '');
+                  const notAssignedBranches = branches.find(br => br.admin === '' || !br?.admin);
                   if (!notAssignedBranches) {
                     return <p>No branches to Assign!</p>;
                   }

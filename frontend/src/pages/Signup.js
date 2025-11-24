@@ -142,7 +142,7 @@ function Signup() {
             <div className="login-card animated-fade"  >
                 <div className="login-header">
                     <h1>Ticketing System</h1>
-                    <p className="text-muted">Sign Up to Start</p>
+                    <p className="text-muted">Administrator Sign Up</p>
                 </div>
 
                 <form onSubmit={makeUser} className="form" style={{ width: '100%' }} >

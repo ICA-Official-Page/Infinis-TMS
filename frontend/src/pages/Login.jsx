@@ -11,6 +11,7 @@ import { faBell, faBuilding, faChartBar, faComment, faEye, faEyeSlash, faMoon, f
 import { faAdd, faBars, faChartLine, faCodePullRequest, faCog, faCommentDots, faGear, faLeaf, faLock, faPersonCircleQuestion, faPlusSquare, faSignOut, faTicketAlt, faTimes, faUserCog, faUsers, faUsersCog } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useNavigate } from 'react-router-dom';
+// import RazorpayButton from '../components/RazorPayButton';
 
 function Login() {
   const dispatch = useDispatch();
@@ -199,9 +200,19 @@ function Login() {
   }
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showNPassword, setShowNPassword] = useState(false);
+  const [showCPassword, setShowCPassword] = useState(false);
 
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
+  };
+
+    const toggleNPassword = () => {
+    setShowNPassword((prev) => !prev);
+  };
+
+    const toggleCPassword = () => {
+    setShowCPassword((prev) => !prev);
   };
 
   return (
@@ -234,29 +245,38 @@ function Login() {
 
                 <div className="form-group">
                   <label htmlFor="npassword" className="form-label">New Password</label>
-                  <input
-                    type="password"
-                    id="npassword"
-                    className="form-control"
-                    value={npassword}
-                    onChange={(e) => setNpassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                  />
-
+                  <div style={styles.container}  >
+                    <input
+                      type={showNPassword ? "text" : "password"}
+                      id="npassword"
+                      className="form-control"
+                      value={npassword}
+                      onChange={(e) => setNpassword(e.target.value)}
+                      placeholder="Enter your password"
+                      required
+                    />
+                    <span onClick={toggleNPassword} style={styles.icon}>
+                      {npassword ? showNPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} /> : ''}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="cpassword" className="form-label">Confirm Password</label>
-                  <input
-                    type="password"
-                    id="cpassword"
-                    className="form-control"
-                    value={cpassword}
-                    onChange={(e) => setCPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    required
-                  />
+                  <div style={styles.container}  >
+                    <input
+                      type={showCPassword ? "text" : "password"}
+                      id="cpassword"
+                      className="form-control"
+                      value={cpassword}
+                      onChange={(e) => setCPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      required
+                    />
+                    <span onClick={toggleCPassword} style={styles.icon}>
+                      {cpassword ? showCPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} /> : ''}
+                    </span>
+                  </div>
                 </div>
 
                 <button
@@ -285,6 +305,7 @@ function Login() {
             </div>
             <div className="login-card animate-fade">
               <div className="login-header">
+                {/* <RazorpayButton amount={50} /> */}
                 <h1>Infinis Ticketing System</h1>
                 <p className="text-muted">Sign in to your account</p>
               </div>
@@ -304,8 +325,8 @@ function Login() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="cpassword" className="form-label">Password</label>
-                  <div style={styles.container}  >
+                  <label htmlFor="password" className="form-label">Password</label>
+                  <div style={styles.container} >
                     <input
                       className='form-control'
                       id='password'
@@ -345,7 +366,7 @@ function Login() {
                     </label>
                 }
               </form>
-              <span style={{ float: 'left' }} >Administrator <label onClick={() => navigate('/signup')} className="form-check-labe" style={{ color: 'blue', cursor: 'pointer' }} htmlFor="remember">
+              <span style={{ float: 'left', color: 'black' }} >Administrator <label onClick={() => navigate('/signup')} className="form-check-labe" style={{ color: 'blue', cursor: 'pointer' }} htmlFor="remember">
                 SignUp
               </label></span>
             </div>

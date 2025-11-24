@@ -8,6 +8,7 @@ const ticketSchema = new mongoose.Schema({
     category: String,
     priority: String,
     tat: String,
+    lastTatMailSent: Date, // New field
     department: [
         {
             name: String,

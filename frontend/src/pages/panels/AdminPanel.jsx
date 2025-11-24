@@ -21,6 +21,9 @@ import OpenTicketCategorization from '../../components/OpenTicketCategorization'
 import ReportBar from '../../components/ReportBar';
 import TicketCard from '../../components/TicketCard';
 import { setSessionWarning } from '../../Redux/userSlice';
+import Subscription from '../../components/Subscription';
+import { AuthProvider } from '../../data/AuthContext';
+import { PaymentProvider } from '../../data/PaymentContext';
 
 function AdminPanel({ view = 'departments' }) {
 
@@ -36,7 +39,9 @@ function AdminPanel({ view = 'departments' }) {
   const [branch, setBranch] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
   const [showUserForm, setShowUserForm] = useState(false);
+  const [showCSVForm, setShowCSVForm] = useState(false);
   const [showDepartmentForm, setShowDepartmentForm] = useState(false);
   const [selectedUser, setselectedUser] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
@@ -415,13 +420,23 @@ function AdminPanel({ view = 'departments' }) {
     dept.description?.toLowerCase().includes(searchTerm?.toLowerCase())
   );
 
+
   // Filter team leaders and managers based on search term
-  const filteredTeamLeaders = teamLeaders?.filter(tl =>
-    tl.branch?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-    tl.username?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-    tl.email?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-    tl.department?.toLowerCase().includes(searchTerm?.toLowerCase())
-  );
+  // 1. Combine all arrays into one
+  const combinedUsers = [...allUsers, ...teamLeaders, ...managers];
+
+  // 2. Filter the combined array
+  const filteredTeamLeaders = combinedUsers?.filter(user => {
+    const matchesStatus = filterUser === 'all' || user?.designation === filterUser;
+
+    const matchesSearch = user?.branch?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+      user?.username?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+      user?.email?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+      user?.department?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+      user?.name?.toLowerCase().includes(searchTerm?.toLowerCase())
+    return matchesStatus && matchesSearch;
+  });
+
 
   const filteredManagers = managers?.filter(m =>
     m.branch?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
@@ -459,145 +474,145 @@ function AdminPanel({ view = 'departments' }) {
   });
 
   //not worked
-  const handleUpdateUser = (userData) => {
-    if (userRole === 'Team Leader') {
-      const updatedTeamLeaders = teamLeaders.map(tl =>
-        tl.id === selectedUser?.id ? { ...tl, ...userData } : tl
-      );
-      setTeamLeaders(updatedTeamLeaders);
-    } else if (userRole === 'Manager') {
-      const updatedManagers = managers.map(m =>
-        m.id === selectedUser?.id ? { ...m, ...userData } : m
-      );
-      setManagers(updatedManagers);
-    }
+  // const handleUpdateUser = (userData) => {
+  //   if (userRole === 'Team Leader') {
+  //     const updatedTeamLeaders = teamLeaders.map(tl =>
+  //       tl.id === selectedUser?.id ? { ...tl, ...userData } : tl
+  //     );
+  //     setTeamLeaders(updatedTeamLeaders);
+  //   } else if (userRole === 'Manager') {
+  //     const updatedManagers = managers.map(m =>
+  //       m.id === selectedUser?.id ? { ...m, ...userData } : m
+  //     );
+  //     setManagers(updatedManagers);
+  //   }
 
-    setselectedUser(null);
-    setUserRole('');
-    setShowUserForm(false);
-    alert('User updated successfully!');
-  };
+  //   setselectedUser(null);
+  //   setUserRole('');
+  //   setShowUserForm(false);
+  //   alert('User updated successfully!');
+  // };
 
-  const handleDeleteUser = () => {
-    if (userRole === 'Team Leader') {
-      const updatedTeamLeaders = teamLeaders?.filter(tl => tl.id !== itemToDelete.id);
-      setTeamLeaders(updatedTeamLeaders);
-    } else if (userRole === 'Manager') {
-      const updatedManagers = managers?.filter(m => m.id !== itemToDelete.id);
-      setManagers(updatedManagers);
-    }
+  // const handleDeleteUser = () => {
+  //   if (userRole === 'Team Leader') {
+  //     const updatedTeamLeaders = teamLeaders?.filter(tl => tl.id !== itemToDelete.id);
+  //     setTeamLeaders(updatedTeamLeaders);
+  //   } else if (userRole === 'Manager') {
+  //     const updatedManagers = managers?.filter(m => m.id !== itemToDelete.id);
+  //     setManagers(updatedManagers);
+  //   }
 
-    setIsDeleteModalOpen(false);
-    setItemToDelete(null);
-    setUserRole('');
-    alert('User deleted successfully!');
-  };
+  //   setIsDeleteModalOpen(false);
+  //   setItemToDelete(null);
+  //   setUserRole('');
+  //   alert('User deleted successfully!');
+  // };
 
-  const handleCreateDepartment = (departmentData) => {
-    // In a real app, this would be an API call
-    const newDepartment = {
-      id: mockDepartments.length + 1,
-      name: departmentData.name,
-      description: departmentData.description,
-      branchId: branch.id,
-      managerId: departmentData.managerId || null,
-      createdAt: new Date().toISOString()
-    };
+  // const handleCreateDepartment = (departmentData) => {
+  //   // In a real app, this would be an API call
+  //   const newDepartment = {
+  //     id: mockDepartments.length + 1,
+  //     name: departmentData.name,
+  //     description: departmentData.description,
+  //     branchId: branch.id,
+  //     managerId: departmentData.managerId || null,
+  //     createdAt: new Date().toISOString()
+  //   };
 
-    // setDepartments([...departments, newDepartment]);
-    setShowDepartmentForm(false);
-    alert('Department created successfully!');
-  };
+  //   // setDepartments([...departments, newDepartment]);
+  //   setShowDepartmentForm(false);
+  //   alert('Department created successfully!');
+  // };
 
-  const handleUpdateDepartment = (departmentData) => {
-    const updatedDepartments = departments.map(dept =>
-      dept.id === selectedDepartment.id ? { ...dept, ...departmentData } : dept
-    );
+  // const handleUpdateDepartment = (departmentData) => {
+  //   const updatedDepartments = departments.map(dept =>
+  //     dept.id === selectedDepartment.id ? { ...dept, ...departmentData } : dept
+  //   );
 
-    // setDepartments(updatedDepartments);
-    setSelectedDepartment(null);
-    setShowDepartmentForm(false);
-    alert('Department updated successfully!');
-  };
+  //   // setDepartments(updatedDepartments);
+  //   setSelectedDepartment(null);
+  //   setShowDepartmentForm(false);
+  //   alert('Department updated successfully!');
+  // };
 
-  const handleUpdateTicketStatus = (ticketId, newStatus) => {
-    const updatedTickets = tickets.map(ticket =>
-      ticket.id === ticketId ? { ...ticket, status: newStatus, updatedAt: new Date().toISOString() } : ticket
-    );
+  // const handleUpdateTicketStatus = (ticketId, newStatus) => {
+  //   const updatedTickets = tickets.map(ticket =>
+  //     ticket.id === ticketId ? { ...ticket, status: newStatus, updatedAt: new Date().toISOString() } : ticket
+  //   );
 
-    // setTickets(updatedTickets);
-    alert('Ticket status updated successfully!');
-  };
+  //   // setTickets(updatedTickets);
+  //   alert('Ticket status updated successfully!');
+  // };
 
-  const handleApprovePasswordRequest = (requestId) => {
-    const updatedRequests = passwordRequests.map(req =>
-      req.id === requestId ?
-        {
-          ...req,
-          status: 'approved',
-          resolvedBy: user?.id,
-          resolvedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        } : req
-    );
+  // const handleApprovePasswordRequest = (requestId) => {
+  //   const updatedRequests = passwordRequests.map(req =>
+  //     req.id === requestId ?
+  //       {
+  //         ...req,
+  //         status: 'approved',
+  //         resolvedBy: user?.id,
+  //         resolvedAt: new Date().toISOString(),
+  //         updatedAt: new Date().toISOString()
+  //       } : req
+  //   );
 
-    setPasswordRequests(updatedRequests);
-    alert('Password request approved!');
-  };
+  //   setPasswordRequests(updatedRequests);
+  //   alert('Password request approved!');
+  // };
 
-  const handleRejectPasswordRequest = (requestId) => {
-    const updatedRequests = passwordRequests.map(req =>
-      req.id === requestId ?
-        {
-          ...req,
-          status: 'rejected',
-          resolvedBy: user?.id,
-          resolvedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        } : req
-    );
+  // const handleRejectPasswordRequest = (requestId) => {
+  //   const updatedRequests = passwordRequests.map(req =>
+  //     req.id === requestId ?
+  //       {
+  //         ...req,
+  //         status: 'rejected',
+  //         resolvedBy: user?.id,
+  //         resolvedAt: new Date().toISOString(),
+  //         updatedAt: new Date().toISOString()
+  //       } : req
+  //   );
 
-    setPasswordRequests(updatedRequests);
-    alert('Password request rejected!');
-  };
+  //   setPasswordRequests(updatedRequests);
+  //   alert('Password request rejected!');
+  // };
 
-  useEffect(() => {
-    // Get branch info
-    const userBranch = mockBranches.find(b => b.adminId === user?.id);
-    setBranch(userBranch);
+  // useEffect(() => {
+  //   // Get branch info
+  //   const userBranch = mockBranches.find(b => b.adminId === user?.id);
+  //   setBranch(userBranch);
 
-    // Get departments in the branch
-    const branchDepartments = mockDepartments?.filter(dept =>
-      dept.branchId === userBranch?.id
-    );
-    // setDepartments(branchDepartments);
+  //   // Get departments in the branch
+  //   const branchDepartments = mockDepartments?.filter(dept =>
+  //     dept.branchId === userBranch?.id
+  //   );
+  //   // setDepartments(branchDepartments);
 
-    // Get team leaders in the branch
-    const branchTeamLeaders = mockUsers?.filter(u =>
-      u?.designation === 'Team Leader' && branchDepartments.some(dept => dept.name === u.department)
-    );
-    setTeamLeaders(branchTeamLeaders);
+  //   // Get team leaders in the branch
+  //   const branchTeamLeaders = mockUsers?.filter(u =>
+  //     u?.designation === 'Team Leader' && branchDepartments.some(dept => dept.name === u.department)
+  //   );
+  //   setTeamLeaders(branchTeamLeaders);
 
-    // Get managers in the branch
-    const branchManagers = mockUsers?.filter(u =>
-      u?.designation === 'Manager' && branchDepartments.some(dept => dept.name === u.department)
-    );
-    setManagers(branchManagers);
+  //   // Get managers in the branch
+  //   const branchManagers = mockUsers?.filter(u =>
+  //     u?.designation === 'Manager' && branchDepartments.some(dept => dept.name === u.department)
+  //   );
+  //   setManagers(branchManagers);
 
-    // Get all tickets in the branch
-    const branchTickets = mockTickets?.filter(ticket =>
-      branchDepartments.some(dept => dept.name === ticket.department)
-    );
-    // setTickets(branchTickets);
+  //   // Get all tickets in the branch
+  //   const branchTickets = mockTickets?.filter(ticket =>
+  //     branchDepartments.some(dept => dept.name === ticket.department)
+  //   );
+  //   // setTickets(branchTickets);
 
-    // Get password requests from team leaders and managers
-    const teamLeaderIds = branchTeamLeaders.map(tl => tl.id);
-    const managerIds = branchManagers.map(m => m.id);
-    const branchPasswordRequests = mockPasswordRequests?.filter(req =>
-      teamLeaderIds.includes(req.userId) || managerIds.includes(req.userId)
-    );
-    setPasswordRequests(branchPasswordRequests);
-  }, [user?.id]);
+  //   // Get password requests from team leaders and managers
+  //   const teamLeaderIds = branchTeamLeaders.map(tl => tl.id);
+  //   const managerIds = branchManagers.map(m => m.id);
+  //   const branchPasswordRequests = mockPasswordRequests?.filter(req =>
+  //     teamLeaderIds.includes(req.userId) || managerIds.includes(req.userId)
+  //   );
+  //   setPasswordRequests(branchPasswordRequests);
+  // }, [user?.id]);
 
 
   //action APIs
@@ -849,6 +864,13 @@ function AdminPanel({ view = 'departments' }) {
         return renderUserRequestsView();
       case 'ticket-settings':
         return renderTicketSetting();
+      case 'subscription':
+        return <Subscription />;
+      // <AuthProvider>
+      //   <PaymentProvider>
+
+      //   </PaymentProvider>
+      // </AuthProvider>
       default:
         return renderDepartmentsView();
     }
@@ -912,43 +934,43 @@ function AdminPanel({ view = 'departments' }) {
   })
   const [activeTab, setActiveTab] = useState('categories');
 
-  useEffect(() => {
-    // Get branch info
-    const userBranch = mockBranches.find(b => b.adminId === user?.id);
-    setBranch(userBranch);
+  // useEffect(() => {
+  //   // Get branch info
+  //   const userBranch = mockBranches.find(b => b.adminId === user?.id);
+  //   setBranch(userBranch);
 
-    // Get departments in the branch
-    const branchDepartments = mockDepartments.filter(dept =>
-      dept.branchId === userBranch?.id
-    );
-    setDepartments(branchDepartments);
+  //   // Get departments in the branch
+  //   const branchDepartments = mockDepartments.filter(dept =>
+  //     dept.branchId === userBranch?.id
+  //   );
+  //   setDepartments(branchDepartments);
 
-    // Get team leaders in the branch
-    const branchTeamLeaders = mockUsers.filter(u =>
-      u.role === 'teamleader' && branchDepartments.some(dept => dept.name === u.department)
-    );
-    setTeamLeaders(branchTeamLeaders);
+  //   // Get team leaders in the branch
+  //   const branchTeamLeaders = mockUsers.filter(u =>
+  //     u.role === 'teamleader' && branchDepartments.some(dept => dept.name === u.department)
+  //   );
+  //   setTeamLeaders(branchTeamLeaders);
 
-    // Get managers in the branch
-    const branchManagers = mockUsers.filter(u =>
-      u.role === 'manager' && branchDepartments.some(dept => dept.name === u.department)
-    );
-    setManagers(branchManagers);
+  //   // Get managers in the branch
+  //   const branchManagers = mockUsers.filter(u =>
+  //     u.role === 'manager' && branchDepartments.some(dept => dept.name === u.department)
+  //   );
+  //   setManagers(branchManagers);
 
-    // Get all tickets in the branch
-    const branchTickets = mockTickets.filter(ticket =>
-      branchDepartments.some(dept => dept.name === ticket.department)
-    );
-    setTickets(branchTickets);
+  //   // Get all tickets in the branch
+  //   const branchTickets = mockTickets.filter(ticket =>
+  //     branchDepartments.some(dept => dept.name === ticket.department)
+  //   );
+  //   setTickets(branchTickets);
 
-    // Get password requests from team leaders and managers
-    const teamLeaderIds = branchTeamLeaders.map(tl => tl?.id);
-    const managerIds = branchManagers.map(m => m?.id);
-    const branchPasswordRequests = mockPasswordRequests.filter(req =>
-      teamLeaderIds.includes(req.userId) || managerIds.includes(req.userId)
-    );
-    setPasswordRequests(branchPasswordRequests);
-  }, [user?.id]);
+  //   // Get password requests from team leaders and managers
+  //   const teamLeaderIds = branchTeamLeaders.map(tl => tl?.id);
+  //   const managerIds = branchManagers.map(m => m?.id);
+  //   const branchPasswordRequests = mockPasswordRequests.filter(req =>
+  //     teamLeaderIds.includes(req.userId) || managerIds.includes(req.userId)
+  //   );
+  //   setPasswordRequests(branchPasswordRequests);
+  // }, [user?.id]);
 
   const handleAddCategory = async () => {
     if (!newCategory.name.trim() || !newCategory.description.trim()) {
@@ -1317,7 +1339,7 @@ function AdminPanel({ view = 'departments' }) {
             {/* Categories List */}
             <div className="space-y-3">
               {ticketSettings?.categories?.map(category => (
-                <div key={category?._id} className="p-3 border rounded">
+                <div key={category?._id} className="p-3 border rounded" style={{ border: '#fcfc solid 1px' }} >
                   {editingCategory?._id === category?._id ? (
                     <div>
                       <input
@@ -1360,7 +1382,7 @@ function AdminPanel({ view = 'departments' }) {
                       </div>
                     </div>
                   ) : (
-                    <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} >
                       <h4 className="font-medium">{category?.name}</h4>
                       <p className="text-sm text-muted">{category?.description}</p>
                       <div className="flex gap-2 mt-2">
@@ -1407,45 +1429,76 @@ function AdminPanel({ view = 'departments' }) {
                 <div className="mb-2 d-flex gap-2" style={{ display: 'flex', width: '100%' }}>
                   {
                     !tat?.hour && !tat?.mint &&
-                    <select name="" id=""
-                      className="form-control mb-2"
-                      onChange={(e) => setTat({ day: e.target.value })}
-                    >
-                      <option value="" selected disabled>Days</option>
+                    <>
+                      <select name="" id=""
+                        className="form-control mb-2"
+                        onChange={(e) => setTat({ day: e.target.value })}
+                      >
+                        <option value="" selected disabled>Days</option>
+                        {
+                          days?.map(curElem => (
+                            <option value={curElem}>{curElem}</option>
+                          ))
+                        }
+                      </select>
                       {
-                        days?.map(curElem => (
-                          <option value={curElem}>{curElem}</option>
-                        ))
+                        tat?.day && <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => setTat({})}
+                        >
+                          Reset
+                        </button>
                       }
-                    </select>
+                    </>
+
                   }
                   {
                     !tat?.day && !tat?.mint &&
-                    <select name="" id=""
-                      className="form-control mb-2"
-                      onChange={(e) => setTat({ hour: e.target.value })}
-                    >
-                      <option value="" selected disabled>Hours</option>
+                    <>
+                      <select name="" id=""
+                        className="form-control mb-2"
+                        onChange={(e) => setTat({ hour: e.target.value })}
+                      >
+                        <option value="" selected disabled>Hours</option>
+                        {
+                          hours?.map(curElem => (
+                            <option value={curElem}>{curElem}</option>
+                          ))
+                        }
+                      </select>
                       {
-                        hours?.map(curElem => (
-                          <option value={curElem}>{curElem}</option>
-                        ))
+                        tat?.hour && <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => setTat({})}
+                        >
+                          Reset
+                        </button>
                       }
-                    </select>
+                    </>
                   }
                   {
                     !tat?.hour && !tat?.day &&
-                    <select name="" id=""
-                      className="form-control mb-2"
-                      onChange={(e) => setTat({ mint: e.target.value })}
-                    >
-                      <option value="" selected disabled>Minutes</option>
+                    <>
+                      <select name="" id=""
+                        className="form-control mb-2"
+                        onChange={(e) => setTat({ mint: e.target.value })}
+                      >
+                        <option value="" selected disabled>Minutes</option>
+                        {
+                          Array.from({ length: 60 }, (_, i) => i + 1).map(curElem => (
+                            <option value={`${curElem} minutes`}>{curElem} minutes</option>
+                          ))
+                        }
+                      </select>
                       {
-                        Array.from({ length: 60 }, (_, i) => i + 1).map(curElem => (
-                          <option value={`${curElem} minutes`}>{curElem} minutes</option>
-                        ))
+                        tat?.mint && <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => setTat({})}
+                        >
+                          Reset
+                        </button>
                       }
-                    </select>
+                    </>
                   }
                 </div>
                 <label htmlFor="color" className="form-label">Select the Color</label>
@@ -1941,6 +1994,149 @@ function AdminPanel({ view = 'departments' }) {
     </>
   );
 
+
+  // 1. Download CSV Template
+  const [csvData, setCsvData] = useState([]);
+
+  const downloadCSVTemplate = () => {
+    const csvHeader = [
+      "username,email,name,mobile,password,designation,postdesignation,branch,branches,department,address"
+    ];
+    const blob = new Blob([csvHeader.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'user_import_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 2. Trigger hidden file input
+  const triggerFileInput = () => {
+    document.getElementById('csvFileInput').click();
+  };
+
+  // 3. Handle CSV Upload and Parse
+  const handleImportCSV = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const rows = text.trim().split('\n');
+        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+
+        const parsedData = rows.slice(1).map(row => {
+          const values = row.split(',').map(v => v.trim());
+          const obj = {};
+          headers.forEach((header, i) => {
+            obj[header] = values[i] || '';
+          });
+
+          // Handle pipe-separated branches
+          if (obj.branches) {
+            obj.branches = obj.branches.split('|');
+          }
+
+          return obj;
+        });
+
+        setCsvData(parsedData);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // 4. Handle Create Users (e.g. Submit to backend)
+  const handleCreateUsers = async () => {
+    if (csvData.length === 0) {
+      toast.error("Please upload a CSV file first.");
+      return;
+    }
+
+    for (let user of csvData) {
+      try {
+        await makeUser(user);
+      } catch (error) {
+        console.error("Error creating user:", user.username, error.message);
+      }
+    }
+
+    toast.success(`✅ Total ${csvData.length} users processed.`);
+  };
+
+  const makeUser = async (user) => {
+    try {
+      setLoading(true);
+
+      const formdata = new FormData();
+      formdata.append('username', user?.username || '');
+      formdata.append('email', user?.email || '');
+      formdata.append('name', user?.name || '');
+      formdata.append('password', user?.password || '');
+      formdata.append('mobile', user?.mobile || '');
+      formdata.append('address', user?.address || '');
+      formdata.append('designation', user?.designation || '');
+      formdata.append('postdesignation', user?.postdesignation || '');
+
+      if (user.designation === 'Team Leader' || user.designation === 'Executive') {
+        formdata.append('department', user?.department || '');
+      }
+
+      // if (user.designation === 'admin') {
+      //   (user?.branches || []).forEach(branch => {
+      //     formdata.append('branches', branch);
+      //   });
+
+      //   await axios.post(`${URI}/superadmin/makeadmin`, formdata, {
+      //     headers: { 'Content-Type': 'multipart/form-data' },
+      //     withCredentials: true
+      //   });
+
+      // } else 
+      if (
+        user.designation === 'Manager' ||
+        user.designation === 'Executive' ||
+        user.designation === 'Team Leader'
+      ) {
+        formdata.append('branch', user?.branch || '');
+
+        const res = await axios.post(`${URI}/admin/adduser`, formdata, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
+        });
+
+        if (res.data.success) {
+          toast.success(res.data.message);
+        }
+
+        // Notification for Executive/Team Leader
+        if (user.designation === 'Executive' || user.designation === 'Team Leader') {
+          await axios.post(`${URI}/notification/pushnotification`, {
+            user: user?._id || '',
+            branch: user?.branch || '',
+            section: 'users',
+            designation: user?.designation,
+            department: user?.department || '',
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // toast.success(`${user.username} created`);
+      fetchAllUsers();
+      fetchAllManagers();
+      fetchAllTeamLeaders();
+    } catch (error) {
+      console.error("while make user:", error);
+      toast.error(error?.response?.data?.message || "Error creating user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const renderLeadershipView = () => (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -1953,7 +2149,7 @@ function AdminPanel({ view = 'departments' }) {
             className="btn btn-secondary"
             onClick={() => {
               setUserRole('Executive');
-              setShowUserForm(true);
+              setShowUserForm(!showUserForm);
             }}
           >
             Add Executive
@@ -1962,7 +2158,7 @@ function AdminPanel({ view = 'departments' }) {
             className="btn btn-primary"
             onClick={() => {
               setUserRole('Team Leader');
-              setShowUserForm(true);
+              setShowUserForm(!showUserForm);
             }}
           >
             Add Team Leader
@@ -1971,10 +2167,19 @@ function AdminPanel({ view = 'departments' }) {
             className="btn btn-secondary"
             onClick={() => {
               setUserRole('Manager');
-              setShowUserForm(true);
+              setShowUserForm(!showUserForm);
             }}
           >
             Add Manager
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setShowCSVForm(!showCSVForm);
+              setShowUserForm(false);
+            }}
+          >
+            Add with CSV
           </button>
         </div>
       </div>
@@ -2001,88 +2206,132 @@ function AdminPanel({ view = 'departments' }) {
             />
           </div>
         </div>
-      ) : (
-        <>
-          <div className="card mb-4">
-            <div className="card-body">
-              <div className="form-group">
+      ) :
+        showCSVForm ? (
+          <>
+            <div className="card">
+              <div className="card-body btn-group">
+                <button className="btn btn-primary" onClick={downloadCSVTemplate}>Import CSV</button>
+
                 <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Search by name, email or department"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  type="file"
+                  id="csvFileInput"
+                  accept=".csv"
+                  onChange={handleImportCSV}
+                  style={{ display: 'none' }}
                 />
+
+                <button className="btn btn-secondary" onClick={triggerFileInput}>Upload CSV</button>
+
+                <button className="btn btn-primary" onClick={handleCreateUsers}>Create Users</button>
               </div>
             </div>
-          </div>
+          </>
+        )
+          : (
+            <>
+              <div className="card mb-4">
+                <div className="card-body">
+                  {/* <div className="form-group"> */}
+                  <div className="grid grid-2 gap-3">
+                    <div className="form-group">
+                      <label htmlFor="status-filter" className="form-label">Filter by User Designation</label>
+                      <select
+                        id="status-filter"
+                        className="form-select"
+                        value={filterUser}
+                        onChange={(e) => setFilterUser(e.target.value)}
+                      >
+                        <option value="all">All Users</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Team Leader">Team Leader</option>
+                        <option value="Executive">Executives</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="search" className="form-label">Search Tickets</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Search by name, email or department"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-          <div className="card mb-4">
-            <div className="card-header">
-              <h3>Team Leaders</h3>
-            </div>
-            <div className="card-body p-0">
-              {filteredTeamLeaders?.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Department</th>
-                        <th>Branch</th>
-                        <th>Joined</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredTeamLeaders?.map(tl => (
-                        <>
-                          {
-                            // tl?.designation === "Team Leader" && tl?.branch === user?.branch &&
-                            <tr key={tl.id}>
-                              <td>
-                                <div className="flex items-center gap-2" style={{ justifyContent: 'center' }}>
-                                  <img className="user-avatar" src={tl?.profile ? tl?.profile : '/img/admin.png'} alt="/img/admin.png" />
-                                  {/* <div className="user-avatar">{tl?.profile}</div> */}
-                                  <span>{tl?.username}</span>
-                                </div>
-                              </td>
-
-                              <td>{tl?.department ? tl?.department : 'Not Assigned'}</td>
-                              <td>{tl?.branch}</td>
-                              <td>{formatDate(tl?.createdAt)}</td>
-                              <td style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <div className="flex gap-2">
-                                  <button
-                                    className="btn btn-sm btn-outline"
-                                    onClick={() => handleEditUser(tl?._id, 'Team Leader')}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-error"
-                                    onClick={() => confirmDeleteUser(tl?._id)}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          }
-                        </>
-                      ))}
-                    </tbody>
-                  </table>
+                  {/* </div> */}
                 </div>
-              ) : (
-                <div className="p-4 text-center">
-                  <p className="text-muted">No team leaders found. Add a new team leader to get started!</p>
-                </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          <div className="card">
+              <div className="card mb-4">
+                <div className="card-header">
+                  <h3>User Table</h3>
+                </div>
+                <div className="card-body p-0">
+                  {filteredTeamLeaders?.length > 0 ? (
+                    <div className="table-responsive">
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Branch</th>
+                            <th>Joined</th>
+                            <th>Roles</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredTeamLeaders?.map(tl => (
+                            <>
+                              {
+                                // tl?.designation === "Team Leader" && tl?.branch === user?.branch &&
+                                <tr key={tl?._id}>
+                                  <td>
+                                    <div className="flex items-center gap-2">
+                                      <img className="user-avatar" src={tl?.profile ? tl?.profile : '/img/admin.png'} alt="/img/admin.png" />
+                                      {/* <div className="user-avatar">{tl?.profile}</div> */}
+                                      <span>{tl?.username}</span>
+                                    </div>
+                                  </td>
+
+                                  <td >{tl?.department ? tl?.department : 'Not Assigned'}</td>
+                                  <td>{tl?.branch}</td>
+                                  <td>{formatDate(tl?.createdAt)}</td>
+                                  <td>{tl?.designation}</td>
+                                  <td style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div className="flex gap-2">
+                                      <button
+                                        className="btn btn-sm btn-outline"
+                                        onClick={() => handleEditUser(tl?._id, tl?.designation)}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        className="btn btn-sm btn-error"
+                                        onClick={() => confirmDeleteUser(tl?._id)}
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              }
+                            </>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center">
+                      <p className="text-muted">No team leaders found. Add a new team leader to get started!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* <div className="card">
             <div className="card-header">
               <h3>Managers</h3>
             </div>
@@ -2103,12 +2352,10 @@ function AdminPanel({ view = 'departments' }) {
                       {filteredManagers?.map(m => (
                         <>
                           {
-                            // m?.designation === "Manager" && m?.branch === user?.branch &&
                             < tr key={m.id}>
                               <td>
-                                <div className="flex items-center gap-2" style={{ justifyContent: 'center' }}>
+                                <div className="flex items-center gap-2" style={{ justifyContent: '' }}>
                                   <img className="user-avatar" src={m?.profile ? m?.profile : '/img/admin.png'} alt="/img/admin.png" />
-                                  {/* <div className="user-avatar">{m?.profile}</div> */}
                                   <span>{m?.username}</span>
                                 </div>
                               </td>
@@ -2167,12 +2414,10 @@ function AdminPanel({ view = 'departments' }) {
                       {filteredExecutives?.map(m => (
                         <>
                           {
-                            // m?.designation === "Manager" && m?.branch === user?.branch &&
-                            < tr key={m.id}>
+                            < tr key={m?._id}>
                               <td>
-                                <div className="flex items-center gap-2" style={{ justifyContent: 'center' }}>
+                                <div className="flex items-center gap-2" style={{ justifyContent: '' }}>
                                   <img className="user-avatar" src={m?.profile ? m?.profile : '/img/admin.png'} alt="/img/admin.png" />
-                                  {/* <div className="user-avatar">{m?.profile}</div> */}
                                   <span>{m?.username}</span>
                                 </div>
                               </td>
@@ -2209,9 +2454,9 @@ function AdminPanel({ view = 'departments' }) {
                 </div>
               )}
             </div>
-          </div>
-        </>
-      )
+          </div> */}
+            </>
+          )
       }
     </>
   );
@@ -2833,6 +3078,8 @@ function AdminPanel({ view = 'departments' }) {
       </div>
     </>
   );
+
+
 
   return (
     <div className="animate-fade">

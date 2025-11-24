@@ -12,7 +12,8 @@ const notificationSchema = new mongoose.Schema({
     tickets: Number,
     passreq: Number,
     userreq: Number,
-    profile: Number
+    profile: Number,
+    subscription: Number
 });
 
 const Notification = new mongoose.model('notification', notificationSchema);

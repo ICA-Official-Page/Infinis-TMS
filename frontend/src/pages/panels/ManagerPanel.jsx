@@ -21,6 +21,7 @@ import TicketStatusChart from '../../components/TicketStatusChart';
 import OpenTicketCategorization from '../../components/OpenTicketCategorization';
 import ReportBar from '../../components/ReportBar';
 import TicketCard from '../../components/TicketCard';
+import Subscription from '../../components/Subscription';
 
 function ManagerPanel({ user, view = 'branch' }) {
   const [branch, setBranch] = useState(null);
@@ -32,6 +33,8 @@ function ManagerPanel({ user, view = 'branch' }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showUserForm, setShowUserForm] = useState(false);
+  const [showCSVForm, setShowCSVForm] = useState(false);
+
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userRole, setUserRole] = useState('');
@@ -178,7 +181,10 @@ function ManagerPanel({ user, view = 'branch' }) {
         },
         withCredentials: true
       }).then(res => {
-        setTickets(res?.data?.data?.filter((tickt) => tickt?.branch === user?.branch));
+        const filtered = res?.data?.data?.filter(ticket =>
+          ticket?.branch === user?.branch
+        );
+        setTickets(filtered);
       }).catch(err => {
         // Handle error and show toast
         if (err.response && err.response.data) {
@@ -516,7 +522,7 @@ function ManagerPanel({ user, view = 'branch' }) {
     try {
       if (reAssignto.name !== '') {
         addCommentOnTicket(data, '');
-        const res = await axios.post(`${URI}/executive/ticketreassign`, { ticketId: selectedTicket?._id, presentDept: selectedTicket?.department, reAssignto: reAssignto }, { withCredentials: true })
+        const res = await axios.post(`${URI}/executive/ticketreassign`, { ticketId: selectedTicket?._id, presentDept: 'Manager', reAssignto: reAssignto }, { withCredentials: true })
           .then(res => {
             handleUpdateTicketStatus(selectedTicket?._id, 'open');
             fetchAllTickets();
@@ -782,6 +788,8 @@ function ManagerPanel({ user, view = 'branch' }) {
         return renderPasswordRequestsView();
       case 'user-requests':
         return renderUserRequestsView();
+      case 'subscription':
+        return <Subscription />;
       default:
         return renderBranchOverview();
     }
@@ -899,6 +907,149 @@ function ManagerPanel({ user, view = 'branch' }) {
     );
   };
 
+
+  // 1. Download CSV Template
+  const [csvData, setCsvData] = useState([]);
+
+  const downloadCSVTemplate = () => {
+    const csvHeader = [
+      "username,email,name,mobile,password,designation,postdesignation,branch,branches,department,address"
+    ];
+    const blob = new Blob([csvHeader.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'user_import_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 2. Trigger hidden file input
+  const triggerFileInput = () => {
+    document.getElementById('csvFileInput').click();
+  };
+
+  // 3. Handle CSV Upload and Parse
+  const handleImportCSV = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const rows = text.trim().split('\n');
+        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+
+        const parsedData = rows.slice(1).map(row => {
+          const values = row.split(',').map(v => v.trim());
+          const obj = {};
+          headers.forEach((header, i) => {
+            obj[header] = values[i] || '';
+          });
+
+          // Handle pipe-separated branches
+          if (obj.branches) {
+            obj.branches = obj.branches.split('|');
+          }
+
+          return obj;
+        });
+
+        setCsvData(parsedData);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // 4. Handle Create Users (e.g. Submit to backend)
+  const handleCreateUsers = async () => {
+    if (csvData.length === 0) {
+      toast.error("Please upload a CSV file first.");
+      return;
+    }
+
+    for (let user of csvData) {
+      try {
+        await makeUser(user);
+      } catch (error) {
+        console.error("Error creating user:", user.username, error.message);
+      }
+    }
+
+    toast.success(`✅ Total ${csvData.length} users processed.`);
+  };
+
+  const makeUser = async (csvuser) => {
+    try {
+      setLoading(true);
+
+      const formdata = new FormData();
+      formdata.append('username', csvuser?.username || '');
+      formdata.append('email', csvuser?.email || '');
+      formdata.append('name', csvuser?.name || '');
+      formdata.append('password', csvuser?.password || '');
+      formdata.append('mobile', csvuser?.mobile || '');
+      formdata.append('address', csvuser?.address || '');
+      formdata.append('designation', csvuser?.designation || '');
+      formdata.append('postdesignation', csvuser?.postdesignation || '');
+
+      if (csvuser.designation === 'Team Leader' || csvuser.designation === 'Executive') {
+        formdata.append('department', csvuser?.department || '');
+      }
+
+      // if (csvuser.designation === 'admin') {
+      //   (csvuser?.branches || []).forEach(branch => {
+      //     formdata.append('branches', branch);
+      //   });
+
+      //   await axios.post(`${URI}/superadmin/makeadmin`, formdata, {
+      //     headers: { 'Content-Type': 'multipart/form-data' },
+      //     withCredentials: true
+      //   });
+
+      // } else 
+      if (
+        // csvuser.designation === 'Manager' ||
+        csvuser.designation === 'Executive' ||
+        csvuser.designation === 'Team Leader'
+      ) {
+        formdata.append('branch', csvuser?.branch || '');
+
+        const res = await axios.post(`${URI}/admin/adduser`, formdata, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
+        });
+
+        if (res.data.success) {
+          toast.success(res.data.message);
+        }
+
+        // Notification for Executive/Team Leader
+        if (csvuser.designation === 'Executive' || csvuser.designation === 'Team Leader') {
+          await axios.post(`${URI}/notification/pushnotification`, {
+            user: user?._id || '',
+            branch: user?.branch || '',
+            section: 'users',
+            designation: user?.designation,
+            department: user?.department || '',
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // toast.success(`${user.username} created`);
+      fetchAllUsers();
+      // fetchAllManagers();
+      fetchAllTeamLeaders();
+    } catch (error) {
+      console.error("while make user:", error);
+      toast.error(error?.response?.data?.message || "Error creating user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const renderTeamView = () => (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -911,7 +1062,8 @@ function ManagerPanel({ user, view = 'branch' }) {
             className="btn btn-primary"
             onClick={() => {
               setUserRole('Team Leader');
-              setShowUserForm(true);
+              setShowUserForm(!showUserForm);
+              setShowCSVForm(false);
             }}
           >
             Add Team Leader
@@ -920,10 +1072,20 @@ function ManagerPanel({ user, view = 'branch' }) {
             className="btn btn-secondary"
             onClick={() => {
               setUserRole('Executive');
-              setShowUserForm(true);
+              setShowUserForm(!showUserForm);
+              setShowCSVForm(false);
             }}
           >
             Add Executive
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setShowCSVForm(!showCSVForm);
+              setShowUserForm(false);
+            }}
+          >
+            Add with CSV
           </button>
         </div>
       </div>
@@ -950,64 +1112,86 @@ function ManagerPanel({ user, view = 'branch' }) {
             />
           </div>
         </div>
-      ) : (
+      ) : showCSVForm ? (
         <>
-          <div className="card mb-4">
-            <div className="card-body">
-              <div className="form-group">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Search by name, email or department"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+          <div className="card">
+            <div className="card-body btn-group">
+              <button className="btn btn-primary" onClick={downloadCSVTemplate}>Import CSV</button>
+
+              <input
+                type="file"
+                id="csvFileInput"
+                accept=".csv"
+                onChange={handleImportCSV}
+                style={{ display: 'none' }}
+              />
+
+              <button className="btn btn-secondary" onClick={triggerFileInput}>Upload CSV</button>
+
+              <button className="btn btn-primary" onClick={handleCreateUsers}>Create Users</button>
             </div>
           </div>
 
-          <div className="card mb-4">
-            <div className="card-header">
-              <h3>Team Leaders</h3>
+        </>
+      )
+        : (
+          <>
+            <div className="card mb-4">
+              <div className="card-body">
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search by name, email or department"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="card-body p-0">
-              {filteredTeamLeaders?.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th>Joined</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredTeamLeaders.map(tl => (
-                        <tr key={tl?.id}>
-                          <td>
-                            <div className="flex items-center gap-2">
-                              <img className="user-avatar" src={tl?.profile ? tl?.profile : '/img/admin.png'} alt="PF" />
-                              <span>{tl?.name}</span>
-                            </div>
-                          </td>
-                          <td>{tl?.email}</td>
-                          <td>{tl?.department ? tl?.department : 'Not Assigned'}</td>
-                          <td>{formatDate(tl?.createdAt)}</td>
-                          <td>
-                            <div className="flex gap-2">
-                              <button
-                                className="btn btn-sm btn-outline"
-                                onClick={() => {
-                                  setSelectedUser(tl);
-                                  setUserRole('Team Leader');
-                                  setShowUserForm(true);
-                                }}
-                              >
-                                Edit
-                              </button>
-                              {/* <button
+
+            <div className="card mb-4">
+              <div className="card-header">
+                <h3>Team Leaders</h3>
+              </div>
+              <div className="card-body p-0">
+                {filteredTeamLeaders?.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Department</th>
+                          <th>Joined</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTeamLeaders.map(tl => (
+                          <tr key={tl?.id}>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                <img className="user-avatar" src={tl?.profile ? tl?.profile : '/img/admin.png'} alt="PF" />
+                                <span>{tl?.name}</span>
+                              </div>
+                            </td>
+                            <td>{tl?.email}</td>
+                            <td>{tl?.department ? tl?.department : 'Not Assigned'}</td>
+                            <td>{formatDate(tl?.createdAt)}</td>
+                            <td>
+                              <div className="flex gap-2">
+                                <button
+                                  className="btn btn-sm btn-outline"
+                                  onClick={() => {
+                                    setSelectedUser(tl);
+                                    setUserRole('Team Leader');
+                                    setShowUserForm(true);
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                                {/* <button
                                 className="btn btn-sm btn-error"
                                 onClick={() => {
                                   setUserToDelete(tl);
@@ -1017,63 +1201,63 @@ function ManagerPanel({ user, view = 'branch' }) {
                               >
                                 Delete
                               </button> */}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="p-4 text-center">
-                  <p className="text-muted">No team leaders found.</p>
-                </div>
-              )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-muted">No team leaders found.</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="card">
-            <div className="card-header">
-              <h3>Executives</h3>
-            </div>
-            <div className="card-body p-0">
-              {filteredExecutives.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th>Joined</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredExecutives.map(exec => (
-                        <tr key={exec.id}>
-                          <td>
-                            <div className="flex items-center gap-2">
-                              <img className="user-avatar" src={exec?.profile ? exec?.profile : '/img/admin.png'} alt="PF" />
-                              <span>{exec.name}</span>
-                            </div>
-                          </td>
-                          <td>{exec.email}</td>
-                          <td>{exec?.department ? exec?.department : 'Not Assigned'}</td>
-                          <td>{formatDate(exec.createdAt)}</td>
-                          <td>
-                            <div className="flex gap-2">
-                              <button
-                                className="btn btn-sm btn-outline"
-                                onClick={() => {
-                                  setSelectedUser(exec);
-                                  setUserRole('Executive');
-                                  setShowUserForm(true);
-                                }}
-                              >
-                                Edit
-                              </button>
-                              {/* <button
+            <div className="card">
+              <div className="card-header">
+                <h3>Executives</h3>
+              </div>
+              <div className="card-body p-0">
+                {filteredExecutives.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Department</th>
+                          <th>Joined</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredExecutives.map(exec => (
+                          <tr key={exec.id}>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                <img className="user-avatar" src={exec?.profile ? exec?.profile : '/img/admin.png'} alt="PF" />
+                                <span>{exec.name}</span>
+                              </div>
+                            </td>
+                            <td>{exec.email}</td>
+                            <td>{exec?.department ? exec?.department : 'Not Assigned'}</td>
+                            <td>{formatDate(exec.createdAt)}</td>
+                            <td>
+                              <div className="flex gap-2">
+                                <button
+                                  className="btn btn-sm btn-outline"
+                                  onClick={() => {
+                                    setSelectedUser(exec);
+                                    setUserRole('Executive');
+                                    setShowUserForm(true);
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                                {/* <button
                                 className="btn btn-sm btn-error"
                                 onClick={() => {
                                   setUserToDelete(exec);
@@ -1083,22 +1267,22 @@ function ManagerPanel({ user, view = 'branch' }) {
                               >
                                 Delete
                               </button> */}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="p-4 text-center">
-                  <p className="text-muted">No executives found.</p>
-                </div>
-              )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-muted">No executives found.</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && userToDelete && (

@@ -82,8 +82,11 @@ function ExecutivePanel({ user, view = 'tickets' }) {
       });
 
       const filtered = res?.data?.data?.filter(ticket =>
-        ticket?.issuedby === `${user?.username}${user?.department ? ` - ${user.department}` : ''} (${user?.designation})` ||
-        ticket?.department?.some(dept => dept?.users?.includes(user?.username))
+        ticket?.branch === user?.branch &&
+        (
+          ticket?.issuedby === `${user?.username}${user?.department ? ` - ${user.department}` : ''} (${user?.designation})` ||
+          ticket?.department?.some(dept => dept?.users?.includes(user?.username))
+        )
       );
       setTickets(filtered);
     } catch (err) {
@@ -288,7 +291,7 @@ function ExecutivePanel({ user, view = 'tickets' }) {
     try {
       if (reAssignto.name !== '') {
         addCommentOnTicket(data, '');
-        const res = await axios.post(`${URI}/executive/ticketreassign`, { ticketId: selectedTicket?._id, presentDept: selectedTicket?.department, reAssignto: reAssignto }, { withCredentials: true })
+        const res = await axios.post(`${URI}/executive/ticketreassign`, { ticketId: selectedTicket?._id, presentDept: user?.department, reAssignto: reAssignto }, { withCredentials: true })
           .then(res => {
             handleUpdateTicketStatus(selectedTicket?._id, 'open');
             fetchAllTickets();

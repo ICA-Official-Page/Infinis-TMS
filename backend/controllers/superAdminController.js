@@ -31,7 +31,7 @@ export const makeAdmin = async (req, res) => {
 
         let imageUrl;
         if (req.file) {
-            imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+            imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -75,13 +75,90 @@ export const makeAdmin = async (req, res) => {
             }
         });
         //body of mail
+
+        const htmlContentofMail = `<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Account Created - Your Credentials</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        color: #2c3e50;
+      }
+
+      p {
+        color: #555555;
+        line-height: 1.6;
+      }
+
+      .credentials-box {
+        background-color: #f0f8ff;
+        border-left: 4px solid #3498db;
+        padding: 15px;
+        margin-top: 20px;
+        font-family: monospace;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #888888;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <h2>Welcome to ICA!</h2>
+
+      <p>Hi <strong>${req.body.name}</strong>,</p>
+
+      <p>
+        Your account has been successfully created on our platform. You can now log in using the following credentials:
+      </p>
+
+      <div class="credentials-box">
+        <p><strong>Email:</strong> ${req.body.email}</p>
+        <p><strong>Password:</strong> ${req.body.password}</p>
+      </div>
+
+      <p>
+        For security reasons, we recommend that you change your password after your first login.
+      </p>
+
+      <p>
+        You can log in here: <a href="https://tms.infinis.io">https://tms.infinis.io</a>
+      </p>
+
+      <p>Thank you for joining us!<br />— The Infinis Team</p>
+
+    </div>
+  </body>
+</html>`;
+
         const mailBody = {
             from: process.env.USER_EMAIL,
             to: req?.body?.email,
             subject: 'Account Credentials for Infinis Ticketing System.',
-            html: `<strong>Email:</strong><span>${req?.body?.email}</span><br>
-                    <strong>Password:</strong><span>${req?.body?.password}</span>
-                    `,
+            html: htmlContentofMail,
+            // `<strong>Email:</strong><span>${req?.body?.email}</span><br>
+            //         <strong>Password:</strong><span>${req?.body?.password}</span>
+            //         `,
         };
         let info = await transtporter.sendMail(mailBody);
         if (branches && branches.length > 0) {
@@ -166,7 +243,7 @@ export const createBranch = async (req, res) => {
     try {
         let imageUrl;
         if (req.file) {
-            imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+            imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
         }
         const branch = await Branch({ ...req.body, profile: imageUrl });
         const saveBranch = await branch.save();
@@ -252,7 +329,7 @@ export const updateBranch = async (req, res) => {
         }
 
         if (req?.file) {
-            const imageUrl = `https://tms.infinis.io/file/${req.file.originalname}`;
+            const imageUrl = `${process.env.BACKEND_URI}/file/${req.file.originalname}`;
             const profile = await Branch.findByIdAndUpdate(branchId, { profile: imageUrl });
             branchUpdated = true;
         }

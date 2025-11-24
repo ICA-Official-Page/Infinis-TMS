@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { faDyalog } from '@fortawesome/free-brands-svg-icons'
-import { faBell, faBuilding, faChartBar, faComment, faMoon, faSun, faUser } from '@fortawesome/free-regular-svg-icons'
-import { faAdd, faBars, faChartLine, faCodePullRequest, faCog, faCommentDots, faGear, faLock, faPersonCircleQuestion, faPlusSquare, faSignOut, faTicketAlt, faTimes, faUserCog, faUsers, faUsersCog } from '@fortawesome/free-solid-svg-icons'
+import { faBell, faBuilding, faChartBar, faComment, faCreditCard, faMoon, faSun, faUser } from '@fortawesome/free-regular-svg-icons'
+import { faAdd, faBars, faChartLine, faCodePullRequest, faCog, faCommentDots, faDollar, faDollarSign, faGear, faLock, faPersonCircleQuestion, faPlusSquare, faSignOut, faTicketAlt, faTimes, faUserCog, faUsers, faUsersCog } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 // import { FaTicketAlt, FaUsers, FaUsersCog, FaBuilding, FaLock, FaChartBar, FaBars, FaTimes } from 'react-icons/fa';
 import ExecutivePanel from './panels/ExecutivePanel';
@@ -15,7 +15,7 @@ import NotFound from './NotFound';
 import '../assets/css/components.css';
 import '../assets/css/dashboard.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { setNotificationCount, setTheme, setUser,setSessionWarning } from '../Redux/userSlice';
+import { setNotificationCount, setTheme, setUser, setSessionWarning } from '../Redux/userSlice';
 import axios from 'axios';
 import URI from '../utills';
 import toast from 'react-hot-toast';
@@ -26,7 +26,7 @@ function Dashboard() {
 
   const dispatch = useDispatch();
 
-  const { user, theme, notificationCount,sessionWarning } = useSelector(store => store.user);
+  const { user, theme, notificationCount, sessionWarning } = useSelector(store => store.user);
 
   const [sidebarExpanded, setSidebarExpanded] = useState(window.innerWidth >= 1024);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -68,7 +68,8 @@ function Dashboard() {
           (obj?.tickets || 0) +
           (obj?.passreq || 0) +
           (obj?.userreq || 0) +
-          (obj?.profile || 0);
+          (obj?.profile || 0) +
+          (obj?.subscription || 0);
         dispatch(setNotificationCount(updatedNotificaton));
       }).catch(err => {
         // Handle error and show toast
@@ -114,7 +115,7 @@ function Dashboard() {
     const resetTimer = () => {
       if (timeoutId.current) clearTimeout(timeoutId.current);
       timeoutId.current = setTimeout(() => {
-        dispatch(setSessionWarning(true)); 
+        dispatch(setSessionWarning(true));
       }, 5 * 60 * 1000); // 5 mins
     };
 
@@ -284,6 +285,9 @@ function Dashboard() {
         else if (text === 'User Requests') {
           payload.section = 'userreq';
         }
+        else if (text === 'Subscription' || text === 'Billing') {
+          payload.section = 'subscription'
+        }
 
         const res = await axios.post(`${URI}/notification/resolvenotification`, payload, {
           headers: {
@@ -297,7 +301,8 @@ function Dashboard() {
             (obj?.tickets || 0) +
             (obj?.passreq || 0) +
             (obj?.userreq || 0) +
-            (obj?.profile || 0);
+            (obj?.profile || 0) +
+            (obj?.subscription || 0);
           dispatch(setNotificationCount(updatedNotificaton));
         }).catch(err => {
           // Handle error and show toast
@@ -362,7 +367,11 @@ function Dashboard() {
             to: '/dashboard/user-requests',
             icon: <FontAwesomeIcon icon={faPersonCircleQuestion} />,
             text: 'User Requests',
-          }
+          }, {
+          to: '/dashboard/subscription',
+          icon: <FontAwesomeIcon icon={faCreditCard} />,
+          text: 'Subscription',
+        }
         );
         break;
 
@@ -432,7 +441,12 @@ function Dashboard() {
             to: '/dashboard/ticket-settings',
             icon: <FontAwesomeIcon icon={faCog} />,
             text: 'Ticket Settings',
-          }
+          },
+        //   {
+        //   to: '/dashboard/subscription',
+        //   icon: <FontAwesomeIcon icon={faCreditCard} />,
+        //   text: 'Subscription',
+        // }
         );
         break;
 
@@ -458,7 +472,11 @@ function Dashboard() {
             icon: <FontAwesomeIcon icon={faTicketAlt} />,
             text: 'All Tickets',
           },
-
+          // {
+          //   to: '/dashboard/billings',
+          //   icon: <FontAwesomeIcon icon={faDollarSign} />,
+          //   text: 'Billing',
+          // },
 
         );
         break;
@@ -558,7 +576,7 @@ function Dashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className={`main-content ${sidebarExpanded ? 'sidebar-expanded' : ''}`}  >
+      <main className={`main-content ${sidebarExpanded ? 'sidebar-expanded' : ''}`} >
         <div
           className={`main-content-bg ${sidebarExpanded ? 'sidebar-expanded' : ''}`}
           style={{ backgroundImage: `url(${branch?.profile})` }}
@@ -627,7 +645,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="page-content">
+        <div className="page-content" >
           <Routes>
             {/* Executive Routes */}
             <Route path="/tickets/*" element={
@@ -645,6 +663,11 @@ function Dashboard() {
               user?.designation === 'Manager' ? <ManagerPanel user={user} view="team" /> :
                 user?.designation === 'Team Leader' ? <TeamLeaderPanel user={user} view="executives" /> :
                   <NotFound />
+            } />
+            <Route path="/subscription" element={
+              user?.designation === 'Manager' ? <ManagerPanel user={user} view="subscription" /> :
+              user?.designation === 'admin' ? <AdminPanel user={user} view="subscription" /> :
+              <NotFound />
             } />
 
             {/* Team Leader Routes */}
@@ -671,8 +694,11 @@ function Dashboard() {
                     <NotFound />
             } />
             <Route path="/ticket-settings" element={
-              user.designation === 'admin' ? <AdminPanel user={user} view="ticket-settings" /> : <NotFound />
+              user?.designation === 'admin' ? <AdminPanel user={user} view="ticket-settings" /> : <NotFound />
             } />
+            {/* <Route path="/subscription" element={
+              user?.designation === 'admin' ? <AdminPanel user={user} view="subscription" /> : <NotFound />
+            } /> */}
 
             {/* Super Admin Routes */}
             <Route path="/branches/*" element={
@@ -684,7 +710,9 @@ function Dashboard() {
             <Route path="/overview/*" element={
               user?.designation === 'superadmin' ? <SuperAdminPanel user={user} view="overview" /> : user?.designation === 'admin' ? <AdminPanel user={user} view='overview' /> : user?.designation === 'Team Leader' ? <TeamLeaderPanel user={user} view='overview' /> : user?.designation === 'Manager' ? <ManagerPanel user={user} view='overview' /> : <NotFound />
             } />
-
+            <Route path="/billings" element={
+              user?.designation === 'superadmin' ? <SuperAdminPanel user={user} view="billing" /> : <NotFound />
+            } />
 
             {/* Common Routes */}
             <Route path="/profile" element={<UserProfile user={user} />} />

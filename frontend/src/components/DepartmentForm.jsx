@@ -162,7 +162,7 @@ function DepartmentForm({ onSubmit, onCancel, initialData = null, allUsers = [],
   return (
     <>
       {sessionWarning && <SessionEndWarning />}
-      <form>
+      <form className='form'>
         <div className="form-group">
           <label htmlFor="name" className="form-label">Department Name</label>
           <input

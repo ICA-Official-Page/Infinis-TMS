@@ -206,7 +206,7 @@ function BranchForm({ onCancel, fetchBranches, initialData = null, admins = [] }
   return (
     <>
       {sessionWarning && <SessionEndWarning />}
-      <form>
+      <form className='form'>
         <div className="form-group">
           <label htmlFor="name" className="form-label">Branch Name</label>
           <input

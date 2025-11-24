@@ -11,6 +11,8 @@ import Signup from './pages/Signup';
 import SessionEndWarning from './components/SessionEndWarning';
 import toast from 'react-hot-toast';
 import { setSessionWarning } from './Redux/userSlice';
+import { PaymentProvider } from './data/PaymentContext';
+import { AuthProvider } from './data/AuthContext';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -56,19 +58,20 @@ function App() {
 
   return (
     <>
-      <Router>
-        {sessionWarning && <SessionEndWarning />}
-        <Routes>
-          <Route path="/" element={
-            user ? <Navigate to="/dashboard" /> : <Login />
-          } />
-          <Route path='/signup' element={<Signup />} />
-          <Route path="/dashboard/*" element={
-            user ? <Dashboard /> : <Navigate to="/" />
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+          <Router>
+            {sessionWarning && <SessionEndWarning />}
+            <Routes>
+              <Route path="/" element={
+                user ? <Navigate to="/dashboard" /> : <Login />
+              } />
+              <Route path='/signup' element={<Signup />} />
+              <Route path="/dashboard/*" element={
+                user ? <Dashboard /> : <Navigate to="/" />
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        
     </>
   );
 }

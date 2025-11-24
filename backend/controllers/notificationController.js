@@ -229,6 +229,10 @@ export const pushNotification = async (req, res) => {
             notify = true;
         }
 
+        else if(section==='subscription'){
+            
+        }
+
         if (notify) {
             return res.status(200).json({
                 success: true,
@@ -297,6 +301,15 @@ export const resolveNotification = async (req, res) => {
             await Notification.updateOne(
                 { user: user },
                 { profile: 0 }
+            )
+            resolve = true;
+
+        }
+
+        else if (section === 'subscription') {
+            await Notification.updateOne(
+                { user: user },
+                { subscription: 0 }
             )
             resolve = true;
 

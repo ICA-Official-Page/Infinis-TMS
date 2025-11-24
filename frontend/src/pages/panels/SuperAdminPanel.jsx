@@ -22,6 +22,9 @@ import ReportBar from '../../components/ReportBar';
 import TicketCard from '../../components/TicketCard';
 import { setSessionWarning } from '../../Redux/userSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import Billing from '../../components/Billing';
+import { AuthProvider } from '../../data/AuthContext';
+import { PaymentProvider } from '../../data/PaymentContext';
 
 function SuperAdminPanel({ user, view = 'overview' }) {
 
@@ -34,6 +37,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [showBranchForm, setShowBranchForm] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
+  const [showCSVForm, setShowCSVForm] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -368,6 +372,9 @@ function SuperAdminPanel({ user, view = 'overview' }) {
   };
 
   const handleUpdateTicketStatus = async (ticketId, status) => {
+    const data = `Ticket Status is ${status} Now`;
+
+    addCommentOnTicket(data, ticketId);
     try {
       setLoading({
         status: true,
@@ -406,12 +413,13 @@ function SuperAdminPanel({ user, view = 'overview' }) {
 
   //action APIs
   //add comment on ticket
-  const addCommentOnTicket = async () => {
+  const addCommentOnTicket = async (data, ticketIdd) => {
     try {
-      const ticketId = selectedTicket?._id;
+      const ticketId = ticketIdd || selectedTicket?._id;
+      const commentData = data || comment;
       const commenter = `${user?.username}(${user?.department && user?.department ? ' - ' : ''}  ${user?.designation})`;
-      if (comment) {
-        const res = await axios.post(`${URI}/executive/addcommentonticket`, { ticketId, comment, commenter }, {
+      if (commentData) {
+        const res = await axios.post(`${URI}/executive/addcommentonticket`, { ticketId, comment: commentData, commenter }, {
           headers: {
             'Content-Type': 'application/json'
           },
@@ -560,6 +568,15 @@ function SuperAdminPanel({ user, view = 'overview' }) {
       //   return renderPasswordRequestsView();
       case 'tickets':
         return renderTicketsView();
+      case 'billing':
+        return <Billing />;
+      // (
+      //   <AuthProvider>
+      //     <PaymentProvider>
+
+      //     </PaymentProvider>
+      //   </AuthProvider>
+      // );
       default:
         return renderOverviewView();
     }
@@ -731,7 +748,10 @@ function SuperAdminPanel({ user, view = 'overview' }) {
             <BranchForm
               initialData={selectedBranch}
               admins={admins}
-              fetchBranches={fetchBranches}
+              fetchBranches={async () => {
+                await fetchBranches();
+                await fetchAllUsers();
+              }}
               // onSubmit={selectedBranch ? handleUpdateBranch : handleCreateBranch}
               onCancel={() => {
                 setSelectedBranch(null);
@@ -824,6 +844,143 @@ function SuperAdminPanel({ user, view = 'overview' }) {
     </>
   );
 
+
+  // 1. Download CSV Template
+  const [csvData, setCsvData] = useState([]);
+
+  const downloadCSVTemplate = () => {
+    const csvHeader = [
+      "username,email,name,mobile,password,designation,postdesignation,branch,branches,department,address"
+    ];
+    const blob = new Blob([csvHeader.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'user_import_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 2. Trigger hidden file input
+  const triggerFileInput = () => {
+    document.getElementById('csvFileInput').click();
+  };
+
+  // 3. Handle CSV Upload and Parse
+  const handleImportCSV = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const rows = text.trim().split('\n');
+        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+
+        const parsedData = rows.slice(1).map(row => {
+          const values = row.split(',').map(v => v.trim());
+          const obj = {};
+          headers.forEach((header, i) => {
+            obj[header] = values[i] || '';
+          });
+
+          // Handle pipe-separated branches
+          if (obj.branches) {
+            obj.branches = obj.branches.split('|');
+          }
+
+          return obj;
+        });
+
+        setCsvData(parsedData);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // 4. Handle Create Users (e.g. Submit to backend)
+  const handleCreateUsers = async () => {
+    if (csvData.length === 0) {
+      alert("Please upload a CSV file first.");
+      return;
+    }
+
+    for (let user of csvData) {
+      try {
+        await makeUser(user);
+      } catch (error) {
+        console.error("Error creating user:", user.username, error.message);
+      }
+    }
+
+    alert(`✅ Total ${csvData.length} users processed.`);
+  };
+
+  const makeUser = async (csvuser) => {
+    try {
+      setLoading(true);
+
+      const formdata = new FormData();
+      formdata.append('username', csvuser?.username || '');
+      formdata.append('email', csvuser?.email || '');
+      formdata.append('name', csvuser?.name || '');
+      formdata.append('password', csvuser?.password || '');
+      formdata.append('mobile', csvuser?.mobile || '');
+      formdata.append('address', csvuser?.address || '');
+      formdata.append('designation', csvuser?.designation || '');
+      formdata.append('postdesignation', csvuser?.postdesignation || '');
+
+      if (csvuser?.designation === 'Team Leader' || csvuser?.designation === 'Executive') {
+        formdata.append('department', csvuser?.department || '');
+      }
+
+      if (csvuser?.designation === 'admin') {
+        (csvuser?.branches || []).forEach(branch => {
+          formdata.append('branches', branch);
+        });
+
+        await axios.post(`${URI}/superadmin/makeadmin`, formdata, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
+        });
+
+      } else if (
+        csvuser?.designation === 'Manager' ||
+        csvuser?.designation === 'Executive' ||
+        csvuser?.designation === 'Team Leader'
+      ) {
+        formdata.append('branch', csvuser?.branch || '');
+
+        await axios.post(`${URI}/admin/adduser`, formdata, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
+        });
+
+        // Notification for Executive/Team Leader
+        if (csvuser?.designation === 'Executive' || csvuser?.designation === 'Team Leader') {
+          await axios.post(`${URI}/notification/pushnotification`, {
+            user: user?._id || '',
+            branch: user?.branch || '',
+            section: 'users',
+            designation: user?.designation,
+            department: user?.department || '',
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      toast.success(`${user.username} created`);
+      fetchAllUsers();
+
+    } catch (error) {
+      console.error("while make user:", error);
+      toast.error(error?.response?.data?.message || "Error creating user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const renderAdminsView = () => (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -831,12 +988,26 @@ function SuperAdminPanel({ user, view = 'overview' }) {
           <h2 className="text-xl font-bold">Admins</h2>
           <p className="text-muted">Manage organization admins</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowUserForm(true)}
-        >
-          Add New Admin
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setShowUserForm(!showUserForm);
+              setShowCSVForm(false);
+            }}
+          >
+            Add New Admin
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setShowCSVForm(!showCSVForm);
+              setShowUserForm(false);
+            }}
+          >
+            Add with CSV
+          </button>
+        </div>
       </div>
 
       {showUserForm ? (
@@ -848,7 +1019,10 @@ function SuperAdminPanel({ user, view = 'overview' }) {
             <UserForm
               initialData={selectedUser}
               admins={admins}
-              fetchAllUsers={fetchAllUsers}
+              fetchAllUsers={async () => {
+                await fetchBranches();
+                await fetchAllUsers();
+              }}
               designation='admin'
               // onSubmit={selectedUser ? handleUpdateAdmin : handleCreateAdmin}
               onCancel={() => {
@@ -858,92 +1032,115 @@ function SuperAdminPanel({ user, view = 'overview' }) {
             />
           </div>
         </div>
-      ) : (
-        <>
-          <div className="card mb-4">
-            <div className="card-body">
-              <div className="form-group">
+      )
+        : showCSVForm ? (
+          <>
+            <div className="card">
+              <div className="card-body btn-group">
+                <button className="btn btn-primary" onClick={downloadCSVTemplate}>Import CSV</button>
+
                 <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Search admins by name or email"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  type="file"
+                  id="csvFileInput"
+                  accept=".csv"
+                  onChange={handleImportCSV}
+                  style={{ display: 'none' }}
                 />
+
+                <button className="btn btn-secondary" onClick={triggerFileInput}>Upload CSV</button>
+
+                <button className="btn btn-primary" onClick={handleCreateUsers}>Create Users</button>
               </div>
             </div>
-          </div>
 
-          <div className="card">
-            <div className="card-body p-0">
-              {filteredAdmins.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        {/* <th>Branch</th> */}
-                        <th>Joined</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredAdmins?.map(admin => {
-                        return (
-                          <>
-                            {
-                              admin?.designation === 'admin' &&
-                              <tr key={admin.id}>
-                                <td>
-                                  <div className="flex items-center gap-2">
-                                    <img src={admin?.profile ? admin?.profile : '/img/admin.png'} className="user-avatar" alt="PF" />
-                                    <span>{admin?.name}</span>
-                                  </div>
-                                </td>
-                                <td>{admin.email}</td>
-                                {/* <td>{admin?.branches}</td> */}
-                                {/* <td>{adminBranch ? adminBranch.name : 'Not assigned'}</td> */}
-                                <td>{formatDate(admin.createdAt)}</td>
-                                <td>
-                                  <div className="flex gap-2" style={{ justifyContent: 'center' }}>
-                                    <button
-                                      className="btn btn-sm btn-outline"
-                                      onClick={() => handleEditAdmin(admin._id)}
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-error"
-                                      onClick={() => confirmDeleteAdmin(admin._id)}
-                                    >
-                                      Delete
-                                    </button>
-                                    {/* <button
+          </>
+        )
+          : (
+            <>
+              <div className="card mb-4">
+                <div className="card-body">
+                  <div className="form-group">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search admins by name or email"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="card-body p-0">
+                  {filteredAdmins.length > 0 ? (
+                    <div className="table-responsive">
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            {/* <th>Branch</th> */}
+                            <th>Joined</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredAdmins?.map(admin => {
+                            return (
+                              <>
+                                {
+                                  admin?.designation === 'admin' &&
+                                  <tr key={admin.id}>
+                                    <td>
+                                      <div className="flex items-center gap-2">
+                                        <img src={admin?.profile ? admin?.profile : '/img/admin.png'} className="user-avatar" alt="PF" />
+                                        <span>{admin?.name}</span>
+                                      </div>
+                                    </td>
+                                    <td>{admin.email}</td>
+                                    {/* <td>{admin?.branches}</td> */}
+                                    {/* <td>{adminBranch ? adminBranch.name : 'Not assigned'}</td> */}
+                                    <td>{formatDate(admin.createdAt)}</td>
+                                    <td>
+                                      <div className="flex gap-2" style={{ justifyContent: 'center' }}>
+                                        <button
+                                          className="btn btn-sm btn-outline"
+                                          onClick={() => handleEditAdmin(admin._id)}
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          className="btn btn-sm btn-error"
+                                          onClick={() => confirmDeleteAdmin(admin._id)}
+                                        >
+                                          Delete
+                                        </button>
+                                        {/* <button
                                       className="btn btn-sm btn-error"
                                     >
                                       View
                                     </button> */}
-                                  </div>
-                                </td>
-                              </tr>
-                            }
-                          </>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                }
+                              </>
 
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center">
+                      <p className="text-muted">No admins found. Add a new admin to get started!</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="p-4 text-center">
-                  <p className="text-muted">No admins found. Add a new admin to get started!</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+              </div>
+            </>
+          )}
     </>
   );
   const statusColor = {
@@ -1035,7 +1232,7 @@ function SuperAdminPanel({ user, view = 'overview' }) {
                   <tr>
                     <th>S.No.</th>
                     <th>Ticket ID</th>
-                    <th>Title</th>
+                    <th>Subject</th>
                     <th>Branch</th>
                     {/* <th>Created On</th> */}
                     {/* <th>Assigned To</th> */}
@@ -1104,9 +1301,6 @@ function SuperAdminPanel({ user, view = 'overview' }) {
                 </tbody>
               </table>
             </div>
-
-
-
 
           ) : (
             <div className="p-4 text-center">

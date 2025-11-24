@@ -81,11 +81,91 @@ export const sendMail = async (req, res) => {
         }
     });
     //body of mail
+
+    const resetCode = '123456'; // ⬅️ Ye aap dynamic banaoge backend se
+
+const htmlForgotPasswordMail = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Password Reset Code</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f4f6;
+        margin: 0;
+        padding: 0;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 30px auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      }
+
+      h2 {
+        color: #2c3e50;
+      }
+
+      p {
+        font-size: 15px;
+        color: #333333;
+        line-height: 1.6;
+      }
+
+      .code-box {
+        background-color: #f0f8ff;
+        color: #2c3e50;
+        font-weight: bold;
+        font-size: 22px;
+        letter-spacing: 3px;
+        padding: 15px;
+        margin: 20px 0;
+        text-align: center;
+        border-radius: 6px;
+        border-left: 4px solid #3498db;
+      }
+
+      .footer {
+        margin-top: 30px;
+        font-size: 13px;
+        color: #777;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <h2>Password Reset Request</h2>
+
+      <p>Hello,</p>
+
+      <p>We received a request to reset your account password. Use the code below to proceed:</p>
+
+      <div class="code-box">${code}</div>
+
+      <p>This code is valid for the next 10 minutes. If you did not request a password reset, you can safely ignore this email.</p>
+
+      <p>Thank you,<br/>The Support Team</p>
+
+      <div class="footer">
+        © ${new Date().getFullYear()} ICA. All rights reserved.
+      </div>
+    </div>
+  </body>
+</html>
+`;
+
+
     const mailBody = {
         from: process.env.USER_EMAIL,
         to: email,
-        subject: 'Code For Update Account information',
-        html: `<h1>${code}</h1>`,
+        subject: 'Reset Password Request.',
+        html: htmlForgotPasswordMail,
     };
     try {
         let info = await transtporter.sendMail(mailBody);
@@ -267,7 +347,7 @@ export const superAdminSignUp = async (req, res) => {
         if (Existuser) {
             return res.status(400).json({
                 success: false,
-                message: 'User Already Created Please Reload!'
+                message: 'Administrator Already Created!'
             });
         }
         if (req.file) {
@@ -380,3 +460,4 @@ export const updateUserPassword = async (req, res) => {
         console.log('while updating user password', error);
     }
 }
+
