@@ -10,7 +10,7 @@ import executiveApp from './routes/executiveRoute.js';
 import notificationApp from './routes/notificationRoute.js';
 import path from 'path';
 import cookieParser from 'cookie-parser';
-import paymentApp from './routes/paymentRoute.js';
+// import paymentApp from './routes/paymentRoute.js';
 import { startTatCron } from './controllers/executiveController.js';
 
 dotenv.config();
@@ -42,7 +42,7 @@ app.use('/executive', executiveApp);
 
 app.use('/notification', notificationApp);
 
-app.use('/payment', paymentApp);
+// app.use('/payment', paymentApp);
 
 app.get('/file/:filename', getProfilePic);
 
