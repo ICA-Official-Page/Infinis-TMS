@@ -372,90 +372,108 @@ const TicketCard = ({
             {/* Reassign Ticket */}
             {
                 !user?.designation?.includes('admin') &&
-                (selectedTicket?.issuedby === `${user?.username}${user?.department ? ` - ${user.department}` : ''} (${user?.designation})` || (selectedTicket?.status !== 'resolved')) && selectedTicket?.status !== 'closed' && 
-                 
-                < div >
-                <h5
-                    className="btn btn-primary mt-4"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setReAssignDiv(!reAssignDiv);
-                        setShowPriorityUpdate(false);
-                        setIsCommentOpen(false);
-                    }}
-                >
-                    ReAssign Ticket
-                </h5>
-                    {reAssignDiv && (
-                <div
-                    ref={reAssignRef}
-                    className="space-y-2 p-3 border rounded shadow bg-gray-50 mt-2"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <select
-                        className="form-select"
-                        onChange={(e) => setReAssignto({ ...reAssignto, name: e.target.value })}
-                        defaultValue=""
+                (selectedTicket?.issuedby === `${user?.username}${user?.department ? ` - ${user.department}` : ''} (${user?.designation})` || (selectedTicket?.status !== 'resolved')) && selectedTicket?.status !== 'closed' &&
+
+                <div>
+                    <h5
+                        className="btn btn-primary mt-4"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setReAssignDiv(!reAssignDiv);
+                            setShowPriorityUpdate(false);
+                            setIsCommentOpen(false);
+                        }}
                     >
-                        <option value="" disabled>
-                            ReAssign the Ticket
-                        </option>
-                        {department?.map(
-                            (curElem, index) =>
-                                !selectedTicket?.department?.some((dept) => dept.name === curElem?.name) && (
-                                    <option key={index} value={curElem?.name}>
-                                        {curElem?.name}
-                                    </option>
-                                )
-                        )}
-                    </select>
-                    <div className="deptcheckbox">
-                        {allUsers
-                            ?.filter((exe) => exe?.department === reAssignto?.name)
-                            .map((exe, idx) => (
-                                <label
-                                    key={idx}
-                                    style={{ display: "block", cursor: "pointer", marginTop: "4px" }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        value={exe?.username}
-                                        onChange={handleCheckboxChange}
-                                        checked={reAssignto?.users.includes(exe?.username)}
-                                    />{" "}
-                                    {exe.username}
-                                </label>
-                            ))}
-                    </div>
-                    <textarea
-                        className="form-control"
-                        rows={2}
-                        placeholder="Add description"
-                        value={reAssignto.description}
-                        onChange={(e) => setReAssignto({ ...reAssignto, description: e.target.value })}
-                    />
-                    <button className="btn btn-success btn-sm mt-2" onClick={reAssignTicket}>
-                        ReAssign
-                    </button>
+                        ReAssign Ticket
+                    </h5>
+                    {reAssignDiv && (
+                        <div
+                            ref={reAssignRef}
+                            className="space-y-2 p-3 border rounded shadow bg-gray-50 mt-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <select
+                                className="form-select"
+                                onChange={(e) => setReAssignto({ ...reAssignto, name: e.target.value })}
+                                defaultValue=""
+                            >
+                                <option value="" disabled>
+                                    ReAssign the Ticket
+                                </option>
+                                {
+                                    selectedTicket?.status !== 'resolved' &&
+                                    <>
+                                        {department?.map(
+                                            (curElem, index) =>
+                                                !selectedTicket?.department?.some((dept) => dept.name === curElem?.name) && (
+                                                    <option key={index} value={curElem?.name}>
+                                                        {curElem?.name}
+                                                    </option>
+                                                )
+                                        )}
+                                    </>
+                                }
+                                {
+                                    selectedTicket?.status === 'resolved' &&
+                                    <>
+                                        {department?.map(
+                                            (curElem, index) =>
+                                                // !selectedTicket?.department?.some((dept) => dept.name === curElem?.name) && (
+                                                <option key={index} value={curElem?.name}>
+                                                    {curElem?.name}
+                                                </option>
+                                            // )
+                                        )}
+                                    </>
+                                }
+                            </select>
+                            <div className="deptcheckbox">
+                                {allUsers
+                                    ?.filter((exe) => exe?.department === reAssignto?.name)
+                                    .map((exe, idx) => (
+                                        <label
+                                            key={idx}
+                                            style={{ display: "block", cursor: "pointer", marginTop: "4px" }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                value={exe?.username}
+                                                onChange={handleCheckboxChange}
+                                                checked={reAssignto?.users.includes(exe?.username)}
+                                            />{" "}
+                                            {exe.username}
+                                        </label>
+                                    ))}
+                            </div>
+                            <textarea
+                                className="form-control"
+                                rows={2}
+                                placeholder="Add description"
+                                value={reAssignto.description}
+                                onChange={(e) => setReAssignto({ ...reAssignto, description: e.target.value })}
+                            />
+                            <button className="btn btn-success btn-sm mt-2" onClick={reAssignTicket}>
+                                ReAssign
+                            </button>
+                        </div>
+                    )}
                 </div>
-            )}
-        </div>
             }
 
-{/* Add Comment Input */ }
-<div className="mt-4">
-    <textarea
-        className="form-control"
-        rows={3}
-        placeholder="Add a comment"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        onClick={(e) => e.stopPropagation()} // Prevent hiding ticket on click
-    />
-    <button className="btn btn-primary mt-2" onClick={onAddComment} disabled={!comment.trim()}>
-        Add Comment
-    </button>
-</div>
+            {/* Add Comment Input */}
+            <div className="mt-4">
+                <textarea
+                    className="form-control"
+                    rows={3}
+                    placeholder="Add a comment"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    onClick={(e) => e.stopPropagation()} // Prevent hiding ticket on click
+                />
+                <button className="btn btn-primary mt-2" onClick={onAddComment} disabled={!comment.trim()}>
+                    Add Comment
+                </button>
+            </div>
         </div >
     );
 };
