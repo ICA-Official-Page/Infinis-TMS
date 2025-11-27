@@ -29,6 +29,7 @@ function Dashboard() {
   const { user, theme, notificationCount, sessionWarning } = useSelector(store => store.user);
 
   const [sidebarExpanded, setSidebarExpanded] = useState(window.innerWidth >= 1024);
+  const [isMobileSidebar, setIsMobileSidebar] = useState(window.innerWidth <= 767);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [pageTitle, setPageTitle] = useState('Dashboard');
   // const [notificationCount, setNotificationCount] = useState(0);
@@ -442,11 +443,11 @@ function Dashboard() {
             icon: <FontAwesomeIcon icon={faCog} />,
             text: 'Ticket Settings',
           },
-        //   {
-        //   to: '/dashboard/subscription',
-        //   icon: <FontAwesomeIcon icon={faCreditCard} />,
-        //   text: 'Subscription',
-        // }
+          //   {
+          //   to: '/dashboard/subscription',
+          //   icon: <FontAwesomeIcon icon={faCreditCard} />,
+          //   text: 'Subscription',
+          // }
         );
         break;
 
@@ -583,6 +584,11 @@ function Dashboard() {
 
         <div className="top-nav">
           <div className="top-nav-left">
+            {isMobileSidebar && <button className="sidebar-toggle"
+              // hidden-sm mr-3"
+              onClick={toggleSidebar}>
+              <FontAwesomeIcon icon={faBars} />
+            </button>}
             {
               user?.designation === 'Executive' || location.pathname === '/dashboard/overview' ? '' :
                 <button className="sidebar-toggle"
@@ -614,7 +620,7 @@ function Dashboard() {
               onClick={onToggleTheme}
               aria-label="Toggle theme"
             >
-              {theme === 'light' ? <FontAwesomeIcon style={{color:'black'}} icon={faMoon} /> : <FontAwesomeIcon icon={faSun} />}
+              {theme === 'light' ? <FontAwesomeIcon style={{ color: 'black' }} icon={faMoon} /> : <FontAwesomeIcon icon={faSun} />}
             </button>
             <div className="profile-dropdown">
               <button
@@ -665,8 +671,8 @@ function Dashboard() {
             } />
             <Route path="/subscription" element={
               user?.designation === 'Manager' ? <ManagerPanel user={user} view="subscription" /> :
-              user?.designation === 'admin' ? <AdminPanel user={user} view="subscription" /> :
-              <NotFound />
+                user?.designation === 'admin' ? <AdminPanel user={user} view="subscription" /> :
+                  <NotFound />
             } />
 
             {/* Team Leader Routes */}
