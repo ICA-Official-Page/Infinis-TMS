@@ -203,8 +203,10 @@ function UserForm({ designation, onCancel, initialData = null, fetchAllUsers, pa
   }
 
   const updationValidation = () => {
-    if (formData?.mobile && formData?.mobile?.length !== 10) {
-      toast.error('mobile must be 10 numbers!')
+    const mobileStr = String(formData?.mobile || '');
+
+    if (mobileStr && mobileStr.length !== 10) {
+      toast.error('Mobile must be 10 digits!');
       return false;
     }
     if (formData?.password) {

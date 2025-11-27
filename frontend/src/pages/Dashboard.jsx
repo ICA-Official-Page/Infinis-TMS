@@ -528,7 +528,6 @@ function Dashboard() {
   return (
     <div
       className={`dashboard ${sidebarExpanded ? 'sidebar-expanded' : ''}`}
-
     >
       {sessionWarning && <SessionEndWarning />}
 
@@ -615,7 +614,7 @@ function Dashboard() {
               onClick={onToggleTheme}
               aria-label="Toggle theme"
             >
-              {theme === 'light' ? <FontAwesomeIcon icon={faMoon} /> : <FontAwesomeIcon icon={faSun} />}
+              {theme === 'light' ? <FontAwesomeIcon style={{color:'black'}} icon={faMoon} /> : <FontAwesomeIcon icon={faSun} />}
             </button>
             <div className="profile-dropdown">
               <button
